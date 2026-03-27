@@ -10,8 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw = file_get_contents('php://input');
     $data = json_decode($raw, true);
 
-    // Leer API key del header o de variable de entorno
-    $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? getenv('GEMINI_API_KEY') ?? '';
+    // Leer API key del header; si viene vacía, usar variable de entorno
+    $headerKey = isset($_SERVER['HTTP_X_API_KEY']) ? trim($_SERVER['HTTP_X_API_KEY']) : '';
+    $apiKey = $headerKey !== '' ? $headerKey : (getenv('GEMINI_API_KEY') ?: '');
 
     if (empty($apiKey)) {
         header('Content-Type: application/json');
@@ -474,8 +475,7 @@ let currentQ=null, srActive=false;
 
 // ── API KEY ──
 const AK='profebot_apikey';
-const DEFAULT_KEY='AIzaSyCkC507zE79Z8iEP3elt1nEFvYLacRfc3g';
-function getApiKey(){return localStorage.getItem(AK)||DEFAULT_KEY;}
+function getApiKey(){return localStorage.getItem(AK)||'';}
 function saveApiKey(){
   const v=document.getElementById('apiKeyInp').value.trim();
   if(!v.startsWith('AIza')){alert('La API key de Gemini debe empezar con AIza...');return;}
@@ -491,7 +491,8 @@ function resetApiKey(){
 }
 function initApiUI(){
   const k=getApiKey();
-  if(k){document.getElementById('apiBanner').style.display='none';document.getElementById('apiOk').style.display='flex';}
+  // Si hay key local o estamos en server (no localhost), ocultar banner
+  if(k||!location.hostname.match(/^(localhost|127\.)/)){document.getElementById('apiBanner').style.display='none';document.getElementById('apiOk').style.display='flex';}
 }
 
 // ── SPEECH ──
@@ -718,11 +719,12 @@ function getUMsg(obj,n,tot,prev){
 }
 async function callAPI(sys,userMsg){
   const key=getApiKey();
-  if(!key)throw new Error('NO_KEY');
-  // Llamar al proxy local (este mismo archivo PHP)
+  // Llamar al proxy local (este mismo archivo PHP) — si no hay key el backend usa env var
+  const hdrs={'Content-Type':'application/json'};
+  if(key)hdrs['X-API-KEY']=key;
   const r=await fetch(window.location.pathname,{
     method:'POST',
-    headers:{'Content-Type':'application/json','X-API-KEY':key},
+    headers:hdrs,
     body:JSON.stringify({max_tokens:1024,system:sys,messages:[{role:'user',content:userMsg}]})
   });
   if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||'HTTP '+r.status);}
