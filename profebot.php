@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $text = $geminiResp['candidates'][0]['content']['parts'][0]['text'];
             http_response_code(200);
-            echo json_encode(['content' => [['text' => $text]]]);
+            echo json_encode(['content' => [['text' => $text]]], JSON_UNESCAPED_UNICODE);
         }
     }
     exit;
@@ -570,6 +570,9 @@ function switchSubj(s,btn){
   _subj=s;
   document.querySelectorAll('.stab').forEach(b=>b.className='stab');
   btn.classList.add(s==='mat'?'am':'al');
+  // Deselect other subject, select all of current
+  selObjs.clear();
+  CUR[s].units.forEach((u,ui)=>u.objs.forEach((_,oi)=>selObjs.add(`${s}::${ui}::${oi}`)));
   renderUnits();
 }
 function pickChip(btn,rid,cls){document.querySelectorAll('#'+rid+' .chip').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
@@ -850,7 +853,7 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 // ── INIT ──
 (function(){
-  Object.entries(CUR).forEach(([s,subj])=>subj.units.forEach((u,ui)=>u.objs.forEach((_,oi)=>selObjs.add(`${s}::${ui}::${oi}`))));
+  CUR[_subj].units.forEach((u,ui)=>u.objs.forEach((_,oi)=>selObjs.add(`${_subj}::${ui}::${oi}`)));
   renderUnits();updSel();initApiUI();loadDefaultMaterials();
   if(!SR){useSR=false;document.getElementById('srToggle').classList.remove('on');checkSR();}
 })();
