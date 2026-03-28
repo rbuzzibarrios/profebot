@@ -5,74 +5,164 @@
 //  Abrir: http://localhost:8080/profebot.php
 // ═══════════════════════════════════════════════════════
 
-// ── PROXY API: si llega POST con JSON → reenviar a Gemini ──
+// ── PROXY API: multi-proveedor con fallback automático ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw = file_get_contents('php://input');
     $data = json_decode($raw, true);
 
-    // Leer API key del header; si viene vacía, usar variable de entorno
-    $headerKey = isset($_SERVER['HTTP_X_API_KEY']) ? trim($_SERVER['HTTP_X_API_KEY']) : '';
-    $apiKey = $headerKey !== '' ? $headerKey : (getenv('GEMINI_API_KEY') ?: '');
+    // Registro de proveedores
+    $PROVIDERS = [
+        'groq' => [
+            'env' => 'GROQ_API_KEY',
+            'build' => function($data, $key) {
+                $body = ['model' => 'llama-3.3-70b-versatile', 'max_tokens' => 2048, 'messages' => []];
+                if (!empty($data['system'])) $body['messages'][] = ['role' => 'system', 'content' => $data['system']];
+                if (!empty($data['messages'])) foreach ($data['messages'] as $m) $body['messages'][] = ['role' => $m['role'], 'content' => $m['content']];
+                return [
+                    'url' => 'https://api.groq.com/openai/v1/chat/completions',
+                    'headers' => ['Content-Type: application/json', 'Authorization: Bearer ' . $key],
+                    'body' => json_encode($body),
+                ];
+            },
+            'parse' => function($resp) {
+                $d = json_decode($resp, true);
+                $text = $d['choices'][0]['message']['content'] ?? null;
+                $err = $d['error']['message'] ?? null;
+                return ['text' => $text, 'error' => $err];
+            },
+        ],
+        'claude' => [
+            'env' => 'ANTHROPIC_API_KEY',
+            'build' => function($data, $key) {
+                $body = ['model' => 'claude-sonnet-4-20250514', 'max_tokens' => 1024];
+                if (!empty($data['system'])) $body['system'] = $data['system'];
+                $body['messages'] = [];
+                if (!empty($data['messages'])) foreach ($data['messages'] as $m) $body['messages'][] = ['role' => $m['role'], 'content' => $m['content']];
+                return [
+                    'url' => 'https://api.anthropic.com/v1/messages',
+                    'headers' => ['Content-Type: application/json', 'x-api-key: ' . $key, 'anthropic-version: 2023-06-01'],
+                    'body' => json_encode($body),
+                ];
+            },
+            'parse' => function($resp) {
+                $d = json_decode($resp, true);
+                $text = $d['content'][0]['text'] ?? null;
+                $err = $d['error']['message'] ?? null;
+                return ['text' => $text, 'error' => $err];
+            },
+        ],
+        'gemini' => [
+            'env' => 'GEMINI_API_KEY',
+            'build' => function($data, $key) {
+                $parts = [];
+                if (!empty($data['system'])) $parts[] = ['text' => $data['system']];
+                if (!empty($data['messages'])) foreach ($data['messages'] as $m) $parts[] = ['text' => $m['content']];
+                $body = [
+                    'contents' => [['parts' => $parts]],
+                    'generationConfig' => ['maxOutputTokens' => 2048],
+                ];
+                if (!empty($data['system'])) {
+                    $body['systemInstruction'] = ['parts' => [['text' => $data['system']]]];
+                    $body['contents'] = [['parts' => array_values(array_filter($parts, function($p) use ($data) { return $p['text'] !== $data['system']; }))]];
+                }
+                return [
+                    'url' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $key,
+                    'headers' => ['Content-Type: application/json'],
+                    'body' => json_encode($body),
+                ];
+            },
+            'parse' => function($resp) {
+                $d = json_decode($resp, true);
+                $text = $d['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                $err = $d['error']['message'] ?? null;
+                return ['text' => $text, 'error' => $err];
+            },
+        ],
+    ];
 
-    if (empty($apiKey)) {
+    // Leer keys y orden de prioridad del body JSON
+    $clientKeys = isset($data['providers']) ? $data['providers'] : [];
+    $order = isset($data['provider_order']) ? $data['provider_order'] : array_keys($PROVIDERS);
+
+    // Resolver keys: client-sent > env var; filtrar proveedores sin key
+    $resolved = [];
+    foreach ($order as $pid) {
+        if (!isset($PROVIDERS[$pid])) continue;
+        $k = '';
+        if (!empty($clientKeys[$pid])) $k = $clientKeys[$pid];
+        elseif (getenv($PROVIDERS[$pid]['env'])) $k = getenv($PROVIDERS[$pid]['env']);
+        if ($k !== '') $resolved[$pid] = $k;
+    }
+
+    if (empty($resolved)) {
         header('Content-Type: application/json');
         http_response_code(401);
-        echo json_encode(['error' => 'API key no configurada. Agregala en el campo de configuración.']);
+        echo json_encode(['error' => 'No hay proveedores configurados. Agregá al menos una API key.']);
         exit;
     }
 
-    // Transformar body de formato Anthropic a formato Gemini
-    $geminiBody = [];
-    if (!empty($data['system'])) {
-        $geminiBody['system_instruction'] = ['parts' => [['text' => $data['system']]]];
-    }
-    $geminiBody['contents'] = [];
-    if (!empty($data['messages'])) {
-        foreach ($data['messages'] as $msg) {
-            $role = $msg['role'] === 'assistant' ? 'model' : 'user';
-            $geminiBody['contents'][] = ['role' => $role, 'parts' => [['text' => $msg['content']]]];
-        }
-    }
-    $geminiBody['generationConfig'] = ['maxOutputTokens' => 2048];
+    // Limpiar campos de control del body antes de enviar al proveedor
+    unset($data['providers'], $data['provider_order']);
 
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . urlencode($apiKey);
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($geminiBody),
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-        ],
-        CURLOPT_TIMEOUT => 60,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => 0,
-    ]);
-
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
+    // Fallback loop
+    $errors = [];
+    $STOP_CODES = [400, 401]; // problemas de config, no reintentar
+    $FALLBACK_CODES = [429, 402, 403, 500, 502, 503];
 
     header('Content-Type: application/json');
     header('Access-Control-Allow-Origin: *');
 
-    if ($error) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Error de red: ' . $error]);
-    } else {
-        // Transformar respuesta Gemini al formato que espera el JS
-        $geminiResp = json_decode($response, true);
-        if ($httpCode >= 400 || !isset($geminiResp['candidates'][0]['content']['parts'][0]['text'])) {
-            $errMsg = $geminiResp['error']['message'] ?? 'Error desconocido de Gemini (HTTP ' . $httpCode . ')';
-            http_response_code($httpCode ?: 500);
-            echo json_encode(['error' => $errMsg]);
-        } else {
-            $text = $geminiResp['candidates'][0]['content']['parts'][0]['text'];
-            http_response_code(200);
-            echo json_encode(['content' => [['text' => $text]]], JSON_UNESCAPED_UNICODE);
+    foreach ($resolved as $pid => $key) {
+        $prov = $PROVIDERS[$pid];
+        $req = $prov['build']($data, $key);
+
+        $ch = curl_init($req['url']);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $req['body'],
+            CURLOPT_HTTPHEADER => $req['headers'],
+            CURLOPT_TIMEOUT => 60,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        // Error cURL → fallback
+        if ($curlErr) {
+            $errors[] = "$pid: red – $curlErr";
+            continue;
         }
+
+        // HTTP error → decidir si parar o fallback
+        if ($httpCode >= 400) {
+            $parsed = $prov['parse']($response);
+            $msg = $parsed['error'] ?: "HTTP $httpCode";
+            if (in_array($httpCode, $STOP_CODES)) {
+                http_response_code($httpCode);
+                echo json_encode(['error' => "$pid: $msg", 'provider' => $pid]);
+                exit;
+            }
+            $errors[] = "$pid: $msg";
+            continue; // fallback
+        }
+
+        // Éxito → parsear y devolver
+        $parsed = $prov['parse']($response);
+        if ($parsed['text']) {
+            echo json_encode(['content' => [['text' => $parsed['text']]], 'provider' => $pid], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $errors[] = "$pid: respuesta vacía";
     }
+
+    // Todos fallaron
+    http_response_code(502);
+    echo json_encode(['error' => 'Todos los proveedores fallaron: ' . implode(' | ', $errors)]);
     exit;
 }
 
@@ -80,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, X-API-KEY');
+    header('Access-Control-Allow-Headers: Content-Type');
     exit;
 }
 
@@ -105,12 +195,20 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
 .screen{display:none;width:100%;max-width:640px;min-height:100vh;flex-direction:column;padding:14px 13px 32px;}
 .screen.active{display:flex;}
 
-/* API KEY BANNER */
-.api-banner{background:linear-gradient(135deg,#FFF3E0,#FFE0CC);border:2px solid rgba(255,107,53,.35);
-  border-radius:14px;padding:14px 15px;margin-bottom:12px;}
-.api-banner h3{font-family:'Baloo 2',cursive;font-size:.95rem;font-weight:800;color:var(--orange);margin-bottom:6px;}
-.api-banner p{font-size:.75rem;font-weight:700;color:#795548;margin-bottom:9px;line-height:1.5;}
-.api-row{display:flex;gap:7px;}
+/* PROVIDER CONFIG */
+.prov-section{margin-bottom:12px;}
+.prov-title{font-family:'Baloo 2',cursive;font-size:.95rem;font-weight:800;color:var(--orange);margin-bottom:8px;}
+.prov-row{border:2px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;transition:border-color .2s;}
+.prov-row.ok{border-color:#86EFAC;}
+.prov-hdr{display:flex;align-items:center;gap:8px;padding:10px 13px;cursor:pointer;user-select:none;
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;color:var(--text);background:var(--card);}
+.prov-hdr:hover{background:#FAFAFA;}
+.prov-status{margin-left:auto;font-size:.75rem;}
+.prov-body{display:none;padding:8px 13px 12px;background:linear-gradient(135deg,#FFF3E0,#FFE0CC);
+  border-top:1px solid var(--border);}
+.prov-body.open{display:block;}
+.prov-body p{font-size:.72rem;font-weight:700;color:#795548;margin-bottom:8px;line-height:1.45;}
+.prov-body .api-row{display:flex;gap:7px;}
 .api-inp{flex:1;padding:9px 12px;border:2px solid var(--border);border-radius:10px;
   font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:600;outline:none;color:var(--text);}
 .api-inp:focus{border-color:var(--orange);}
@@ -119,6 +217,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
   cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;white-space:nowrap;}
 .api-ok{background:#E8F8EF;border:1.5px solid #86EFAC;border-radius:10px;padding:9px 13px;
   font-size:.78rem;font-weight:700;color:#166534;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.prov-badge{display:inline-block;font-size:.62rem;font-weight:700;color:var(--muted);margin-top:2px;}
 
 /* SETUP */
 .setup-hdr{text-align:center;padding:20px 0 14px;}
@@ -322,17 +421,54 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
     <p>🎙️ ¡Yo te leo todo en voz alta!</p>
   </div>
 
-  <!-- API KEY -->
+  <!-- PROVEEDORES -->
   <div id="apiSection">
-    <div class="api-banner" id="apiBanner">
-      <h3>🔑 Configurar API Key de Google Gemini</h3>
-      <p>Necesitás una API key de <a href="https://aistudio.google.com/apikey" target="_blank"><strong>aistudio.google.com/apikey</strong></a> → Create API Key.<br>Se guarda solo en tu navegador, nunca se envía a otros servidores.</p>
-      <div class="api-row">
-        <input class="api-inp" type="password" id="apiKeyInp" placeholder="AIza..."/>
-        <button class="api-save" onclick="saveApiKey()">Guardar</button>
+    <div class="prov-section" id="provConfig">
+      <div class="prov-title">🔑 Configurar Proveedores de IA</div>
+
+      <div class="prov-row" id="provRow_claude">
+        <div class="prov-hdr" onclick="toggleProv('claude')">
+          <span>🟠 Claude</span>
+          <span class="prov-status" id="provSt_claude">❌</span>
+        </div>
+        <div class="prov-body" id="provBody_claude">
+          <p>Obtené tu key en <a href="https://console.anthropic.com/settings/keys" target="_blank"><strong>console.anthropic.com</strong></a> → API Keys.</p>
+          <div class="api-row">
+            <input class="api-inp" type="password" id="provInp_claude" placeholder="sk-ant-..."/>
+            <button class="api-save" onclick="saveProv('claude')">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prov-row" id="provRow_groq">
+        <div class="prov-hdr" onclick="toggleProv('groq')">
+          <span>⚡ Groq</span>
+          <span class="prov-status" id="provSt_groq">❌</span>
+        </div>
+        <div class="prov-body" id="provBody_groq">
+          <p>Obtené tu key en <a href="https://console.groq.com/keys" target="_blank"><strong>console.groq.com/keys</strong></a> → Create API Key.</p>
+          <div class="api-row">
+            <input class="api-inp" type="password" id="provInp_groq" placeholder="gsk_..."/>
+            <button class="api-save" onclick="saveProv('groq')">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prov-row" id="provRow_gemini">
+        <div class="prov-hdr" onclick="toggleProv('gemini')">
+          <span>💎 Gemini</span>
+          <span class="prov-status" id="provSt_gemini">❌</span>
+        </div>
+        <div class="prov-body" id="provBody_gemini">
+          <p>Obtené tu key en <a href="https://aistudio.google.com/apikey" target="_blank"><strong>aistudio.google.com/apikey</strong></a> → Create API Key.</p>
+          <div class="api-row">
+            <input class="api-inp" type="password" id="provInp_gemini" placeholder="AIza..."/>
+            <button class="api-save" onclick="saveProv('gemini')">Guardar</button>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="api-ok" id="apiOk" style="display:none">✅ API Key configurada. <span style="margin-left:auto;cursor:pointer;text-decoration:underline;font-size:.7rem" onclick="resetApiKey()">Cambiar</span></div>
+    <div class="api-ok" id="apiOk" style="display:none"><span id="apiOkTxt">✅ 1 proveedor configurado.</span> <span style="margin-left:auto;cursor:pointer;text-decoration:underline;font-size:.7rem" onclick="showProvConfig()">Cambiar</span></div>
   </div>
 
   <!-- OBJECTIVES -->
@@ -473,26 +609,72 @@ let sessQs=[], sessIdx=0, sessCorr=0, sessWrong=0, sessAsked=[];
 let sessMode='study', sessIsAuto=false;
 let currentQ=null, srActive=false;
 
-// ── API KEY ──
-const AK='profebot_apikey';
-function getApiKey(){return localStorage.getItem(AK)||'';}
-function saveApiKey(){
-  const v=document.getElementById('apiKeyInp').value.trim();
-  if(!v.startsWith('AIza')){alert('La API key de Gemini debe empezar con AIza...');return;}
-  localStorage.setItem(AK,v);
-  document.getElementById('apiBanner').style.display='none';
-  document.getElementById('apiOk').style.display='flex';
+// ── PROVEEDORES ──
+const PK='profebot_providers';
+const PROV_META={
+  claude:{label:'Claude',prefix:'sk-ant-',order:0},
+  gemini:{label:'Gemini',prefix:'AIza',order:1},
+  groq:{label:'Groq',prefix:'gsk_',order:2},
+};
+const PROV_ORDER=Object.keys(PROV_META);
+
+function getProviderKeys(){try{return JSON.parse(localStorage.getItem(PK))||{};}catch(e){return {};}}
+function setProviderKeys(obj){localStorage.setItem(PK,JSON.stringify(obj));}
+
+// Migrar key vieja (profebot_apikey) → estructura nueva
+function migrateOldKey(){
+  const old=localStorage.getItem('profebot_apikey');
+  if(!old)return;
+  const cur=getProviderKeys();
+  if(!cur.groq){cur.groq=old;setProviderKeys(cur);}
+  localStorage.removeItem('profebot_apikey');
 }
-function resetApiKey(){
-  localStorage.removeItem(AK);
-  document.getElementById('apiBanner').style.display='block';
+
+function saveProv(pid){
+  const inp=document.getElementById('provInp_'+pid);
+  const v=inp.value.trim();
+  const meta=PROV_META[pid];
+  if(meta.prefix&&!v.startsWith(meta.prefix)){alert('La key de '+meta.label+' debe empezar con '+meta.prefix+'...');return;}
+  const keys=getProviderKeys();keys[pid]=v;setProviderKeys(keys);
+  inp.value='';
+  refreshProvUI();
+}
+
+function toggleProv(pid){
+  const body=document.getElementById('provBody_'+pid);
+  body.classList.toggle('open');
+}
+
+function refreshProvUI(){
+  const keys=getProviderKeys();
+  let count=0;
+  for(const pid of PROV_ORDER){
+    const has=!!keys[pid];
+    if(has)count++;
+    document.getElementById('provSt_'+pid).textContent=has?'✅':'❌';
+    document.getElementById('provRow_'+pid).classList.toggle('ok',has);
+  }
+  const isServer=!location.hostname.match(/^(localhost|127\.)/);
+  const hasLocal=count>0;
+  if(hasLocal||isServer){
+    document.getElementById('provConfig').style.display='none';
+    document.getElementById('apiOk').style.display='flex';
+    const txt=isServer&&!hasLocal?'✅ Servidor configurado.':'✅ '+count+' proveedor'+(count>1?'es':'')+' configurado'+(count>1?'s':'')+'.';
+    document.getElementById('apiOkTxt').textContent=txt;
+  }else{
+    document.getElementById('provConfig').style.display='block';
+    document.getElementById('apiOk').style.display='none';
+  }
+}
+
+function showProvConfig(){
+  document.getElementById('provConfig').style.display='block';
   document.getElementById('apiOk').style.display='none';
-  document.getElementById('apiKeyInp').value='';
 }
+
 function initApiUI(){
-  const k=getApiKey();
-  // Si hay key local o estamos en server (no localhost), ocultar banner
-  if(k||!location.hostname.match(/^(localhost|127\.)/)){document.getElementById('apiBanner').style.display='none';document.getElementById('apiOk').style.display='flex';}
+  migrateOldKey();
+  refreshProvUI();
 }
 
 // ── SPEECH ──
@@ -685,17 +867,23 @@ function buildCtx(subjKey){
   return c+'=== FIN ===\n';
 }
 function getSys(obj){
-  return`Generás preguntas de múltiple opción para 1° grado (niños 6-7 años), currículo cubano.
+  return`Eres un generador de preguntas de múltiple opción para 1° grado (niños 6-7 años), currículo cubano.
 Materia: ${obj.subj}. Unidad: "${obj.unit}".
 
-Responde EXACTAMENTE con este formato (sin texto extra, sin markdown):
+INSTRUCCIONES ESTRICTAS:
+1. Primero decide cuál es la respuesta correcta.
+2. Luego coloca esa respuesta en una de las 4 opciones (A, B, C o D) al azar.
+3. Las otras 3 opciones deben ser INCORRECTAS pero creíbles.
+4. En CORRECTA: pon la LETRA (A, B, C o D) donde pusiste la respuesta correcta.
+
+FORMATO OBLIGATORIO (exactamente 7 líneas, sin texto extra, sin markdown, sin asteriscos):
 PREGUNTA: [máx 18 palabras]
-A) [máx 4 palabras]
-B) [máx 4 palabras]
-C) [máx 4 palabras]
-D) [máx 4 palabras]
-CORRECTA: [A, B, C o D]
-EXPLICACION: [1 oración corta]
+A) [opción]
+B) [opción]
+C) [opción]
+D) [opción]
+CORRECTA: [la letra A, B, C o D que tiene la respuesta correcta]
+EXPLICACION: [1 oración corta explicando por qué esa es la correcta]
 
 Ejemplo:
 PREGUNTA: ¿Cuánto es 2 + 3?
@@ -706,8 +894,9 @@ D) 7
 CORRECTA: B
 EXPLICACION: 2 más 3 es 5.
 
-IMPORTANTE: Siempre incluir las 7 líneas. Siempre incluir CORRECTA y EXPLICACION. Lenguaje muy simple, español.
-PROHIBIDO: No generes preguntas que necesiten ver una imagen, dibujo, ilustración, figura, lámina o tabla. Todo debe poder entenderse SOLO con texto.${buildCtx(obj.subjKey)}`;
+VERIFICA antes de responder: la letra en CORRECTA debe coincidir con la opción que tiene la respuesta verdadera.
+
+PROHIBIDO: preguntas que necesiten ver una imagen, dibujo, ilustración, figura, lámina o tabla. Todo debe entenderse SOLO con texto. Lenguaje muy simple, español.${buildCtx(obj.subjKey)}`;
 }
 function getUMsg(obj,n,tot,prev){
   const dm={
@@ -720,23 +909,27 @@ function getUMsg(obj,n,tot,prev){
   if(prev.length)m+=`\nNo repetir: ${prev.slice(-5).join(' / ')}`;
   return m;
 }
+let lastProvider='';
 async function callAPI(sys,userMsg){
-  const key=getApiKey();
-  // Llamar al proxy local (este mismo archivo PHP) — si no hay key el backend usa env var
-  const hdrs={'Content-Type':'application/json'};
-  if(key)hdrs['X-API-KEY']=key;
+  const keys=getProviderKeys();
+  const order=PROV_ORDER.filter(p=>!!keys[p]);
+  // Si no hay keys locales, enviar orden default (backend usará env vars)
+  const sendOrder=order.length?order:PROV_ORDER;
   const r=await fetch(window.location.pathname,{
     method:'POST',
-    headers:hdrs,
-    body:JSON.stringify({max_tokens:1024,system:sys,messages:[{role:'user',content:userMsg}]})
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system:sys,messages:[{role:'user',content:userMsg}],providers:keys,provider_order:sendOrder})
   });
   if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||'HTTP '+r.status);}
-  return r.json();
+  const d=await r.json();
+  if(d.provider)lastProvider=d.provider;
+  return d;
 }
 
 // ── PARSE ──
 function parseQ(txt){
-  // Gemini a veces envuelve la respuesta en bloques markdown o añade asteriscos
+  console.log('[parseQ] raw:',txt);
+  // El modelo a veces envuelve la respuesta en bloques markdown o añade asteriscos
   txt=txt.replace(/```[a-z]*\n?/g,'').replace(/\*\*/g,'').trim();
   const qm=txt.match(/PREGUNTA:\s*(.+?)(?=\n[A-D]\))/is);
   const am=txt.match(/^A\)\s*(.+)/im),bm=txt.match(/^B\)\s*(.+)/im);
@@ -776,7 +969,7 @@ async function loadQ(){
 function renderQ(q){
   const letters=['A','B','C','D'].filter(l=>q.opts[l]);
   document.getElementById('vContent').innerHTML=`
-    <div class="qbubble"><div class="qobj">${esc(q.objText)}</div><br><span>${esc(q.question)}</span></div>
+    <div class="qbubble"><div class="qobj">${esc(q.objText)}</div><br><span>${esc(q.question)}</span>${lastProvider?'<div class="prov-badge">vía '+esc(PROV_META[lastProvider]?.label||lastProvider)+'</div>':''}</div>
     <div class="opts">${letters.map(l=>`<button class="opt" data-l="${l}" onclick="chooseAns('${l}')" id="opt${l}"><span class="oltr">${l}</span><span>${esc(q.opts[l])}</span></button>`).join('')}</div>
     <div class="vfeedback" id="vfb"></div>
     <div class="vexpl" id="vex"></div>
