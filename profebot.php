@@ -5,10 +5,81 @@
 //  Abrir: http://localhost:8080/profebot.php
 // ═══════════════════════════════════════════════════════
 
+// ── CACHE DE PREGUNTAS ──
+define('CACHE_FILE', is_dir('/var/data') ? '/var/data/question_cache.json' : __DIR__ . '/question_cache.json');
+define('CACHE_MAX_PER_KEY', 50);
+
+function cache_read() {
+    if (!file_exists(CACHE_FILE)) return [];
+    $f = fopen(CACHE_FILE, 'r');
+    if (!$f) return [];
+    flock($f, LOCK_SH);
+    $data = json_decode(fread($f, max(1, filesize(CACHE_FILE))), true);
+    flock($f, LOCK_UN);
+    fclose($f);
+    return is_array($data) ? $data : [];
+}
+
+function cache_write($data) {
+    $f = fopen(CACHE_FILE, 'c+');
+    if (!$f) return false;
+    flock($f, LOCK_EX);
+    ftruncate($f, 0);
+    rewind($f);
+    fwrite($f, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    fflush($f);
+    flock($f, LOCK_UN);
+    fclose($f);
+    return true;
+}
+
 // ── PROXY API: multi-proveedor con fallback automático ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw = file_get_contents('php://input');
     $data = json_decode($raw, true);
+
+    // ── Cache actions ──
+    if (isset($data['action'])) {
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+
+        if ($data['action'] === 'cache_get') {
+            $key = isset($data['cache_key']) ? $data['cache_key'] : '';
+            $exclude = isset($data['exclude']) ? $data['exclude'] : [];
+            $cache = cache_read();
+            $items = isset($cache[$key]) ? $cache[$key] : [];
+            // Filter out already-asked questions
+            $available = array_values(array_filter($items, function($q) use ($exclude) {
+                return !in_array($q['question'], $exclude);
+            }));
+            if (empty($available)) {
+                echo json_encode(['cached' => false]);
+            } else {
+                $pick = $available[array_rand($available)];
+                echo json_encode(['cached' => true, 'question' => $pick]);
+            }
+            exit;
+        }
+
+        if ($data['action'] === 'cache_save') {
+            $key = isset($data['cache_key']) ? $data['cache_key'] : '';
+            $question = isset($data['question']) ? $data['question'] : null;
+            if (!$key || !$question) {
+                echo json_encode(['saved' => false, 'error' => 'missing data']);
+                exit;
+            }
+            $cache = cache_read();
+            if (!isset($cache[$key])) $cache[$key] = [];
+            $cache[$key][] = $question;
+            // FIFO: keep max per key
+            if (count($cache[$key]) > CACHE_MAX_PER_KEY) {
+                $cache[$key] = array_slice($cache[$key], -CACHE_MAX_PER_KEY);
+            }
+            cache_write($cache);
+            echo json_encode(['saved' => true]);
+            exit;
+        }
+    }
 
     // Registro de proveedores
     $PROVIDERS = [
@@ -615,6 +686,7 @@ const PROV_META={
   claude:{label:'Claude',prefix:'sk-ant-',order:0},
   gemini:{label:'Gemini',prefix:'AIza',order:1},
   groq:{label:'Groq',prefix:'gsk_',order:2},
+  cache:{label:'Cache',prefix:'',order:99},
 };
 const PROV_ORDER=Object.keys(PROV_META);
 
@@ -943,19 +1015,48 @@ function pickObj(){
   return sessIsAuto?all[Math.floor(Math.random()*all.length)]:all[sessIdx%all.length];
 }
 
+function getRealDiff(){
+  if(battDiff!=='mixto')return battDiff;
+  return['fácil','media','difícil'][sessIdx%3];
+}
+
+function saveToCacheBackground(cacheKey,q){
+  const body={action:'cache_save',cache_key:cacheKey,question:{question:q.question,opts:q.opts,correct:q.correct,explanation:q.explanation}};
+  fetch(window.location.pathname,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()).then(d=>console.log('[cache] saved',cacheKey,d)).catch(e=>console.warn('[cache] save error',e));
+}
+
 async function loadQ(){
   stopAll();setStatus('Generando pregunta...','');setOwl('idle');
   document.getElementById('vContent').innerHTML=`<div class="vloading"><div class="ldots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div><p>Pregunta ${sessIdx+1} de ${battCnt}...</p></div>`;
   const obj=pickObj();if(!obj)return;
+  const realDiff=getRealDiff();
+  const cacheKey=obj.k+'::'+realDiff;
   try{
+    // Try cache first
     let q=null;
-    for(let attempt=0;attempt<3&&!q;attempt++){
-      const d=await callAPI(getSys(obj),getUMsg(obj,sessIdx+1,battCnt,sessAsked));
-      const txt=d.content?.[0]?.text||'';
-      q=parseQ(txt);
-      if(!q)console.warn('parseQ retry',attempt+1,'on:',txt);
+    try{
+      const cr=await fetch(window.location.pathname,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'cache_get',cache_key:cacheKey,exclude:sessAsked})});
+      const cd=await cr.json();
+      if(cd.cached&&cd.question){
+        q=cd.question;
+        console.log('[cache] hit',cacheKey);
+        lastProvider='cache';
+      }
+    }catch(e){console.warn('[cache] get error',e);}
+
+    // Cache miss → call AI
+    if(!q){
+      console.log('[cache] miss',cacheKey);
+      for(let attempt=0;attempt<3&&!q;attempt++){
+        const d=await callAPI(getSys(obj),getUMsg(obj,sessIdx+1,battCnt,sessAsked));
+        const txt=d.content?.[0]?.text||'';
+        q=parseQ(txt);
+        if(!q)console.warn('parseQ retry',attempt+1,'on:',txt);
+      }
+      if(!q)throw new Error('parse');
+      // Save to cache in background
+      saveToCacheBackground(cacheKey,q);
     }
-    if(!q)throw new Error('parse');
     q.objText=obj.obj;q.subjLabel=obj.subj;q.chosen=null;q.color=obj.color;
     sessQs.push(q);sessAsked.push(q.question);currentQ=q;
     renderQ(q);
