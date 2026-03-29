@@ -11,12 +11,9 @@ define('CACHE_MAX_PER_KEY', 50);
 
 function cache_read() {
     if (!file_exists(CACHE_FILE)) return [];
-    $f = fopen(CACHE_FILE, 'r');
-    if (!$f) return [];
-    flock($f, LOCK_SH);
-    $data = json_decode(fread($f, max(1, filesize(CACHE_FILE))), true);
-    flock($f, LOCK_UN);
-    fclose($f);
+    $raw = file_get_contents(CACHE_FILE);
+    if ($raw === false || $raw === '') return [];
+    $data = json_decode($raw, true);
     return is_array($data) ? $data : [];
 }
 
