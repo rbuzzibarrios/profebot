@@ -692,7 +692,6 @@ const PROV_META={
   claude:{label:'Claude',prefix:'sk-ant-',order:0},
   gemini:{label:'Gemini',prefix:'AIza',order:1},
   groq:{label:'Groq',prefix:'gsk_',order:2},
-  cache:{label:'Cache',prefix:'',order:99},
 };
 const PROV_ORDER=Object.keys(PROV_META);
 
