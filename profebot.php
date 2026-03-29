@@ -258,7 +258,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-<title>ProfeBot Voz 🎙️</title>
+<title>ProfeBot — Tutor interactivo con IA para 1° grado</title>
+<meta name="description" content="Tutor educativo con inteligencia artificial para estudiantes de 1° grado del currículo cubano. Genera preguntas de Matemática y Lengua Española con voz interactiva."/>
+<meta name="keywords" content="tutor IA, educación primaria, 1er grado, currículo cubano, matemática, lengua española, preguntas interactivas, aprendizaje con voz"/>
+<meta name="author" content="ProfeBot"/>
+<meta name="robots" content="index, follow"/>
+<link rel="canonical" href="https://buzziprofebot.onrender.com/profebot.php"/>
+<meta property="og:title" content="ProfeBot — Tutor interactivo con IA para 1° grado"/>
+<meta property="og:description" content="Genera preguntas de opción múltiple con IA, las lee en voz alta y acepta respuestas por voz. Matemática y Lengua Española, currículo cubano."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://buzziprofebot.onrender.com/profebot.php"/>
+<meta property="og:locale" content="es_CU"/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
