@@ -55,8 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($available)) {
                 echo json_encode(['cached' => false]);
             } else {
-                $pick = $available[array_rand($available)];
-                echo json_encode(['cached' => true, 'question' => $pick]);
+                // If fewer than 5 cached, 50% chance to skip cache and go to AI to grow variety
+                if (count($items) < 5 && mt_rand(1, 100) <= 50) {
+                    echo json_encode(['cached' => false]);
+                } else {
+                    $pick = $available[array_rand($available)];
+                    echo json_encode(['cached' => true, 'question' => $pick]);
+                }
             }
             exit;
         }
@@ -99,7 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $d = json_decode($resp, true);
                 $text = $d['choices'][0]['message']['content'] ?? null;
                 $err = $d['error']['message'] ?? null;
-                return ['text' => $text, 'error' => $err];
+                $usage = $d['usage'] ?? null;
+                return ['text' => $text, 'error' => $err, 'usage' => $usage];
             },
         ],
         'claude' => [
@@ -146,7 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $d = json_decode($resp, true);
                 $text = $d['candidates'][0]['content']['parts'][0]['text'] ?? null;
                 $err = $d['error']['message'] ?? null;
-                return ['text' => $text, 'error' => $err];
+                $usage = $d['usageMetadata'] ?? null;
+                return ['text' => $text, 'error' => $err, 'usage' => $usage];
             },
         ],
     ];
@@ -225,7 +232,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Éxito → parsear y devolver
         $parsed = $prov['parse']($response);
         if ($parsed['text']) {
-            echo json_encode(['content' => [['text' => $parsed['text']]], 'provider' => $pid], JSON_UNESCAPED_UNICODE);
+            $out = ['content' => [['text' => $parsed['text']]], 'provider' => $pid];
+            if (!empty($parsed['usage'])) $out['usage'] = $parsed['usage'];
+            echo json_encode($out, JSON_UNESCAPED_UNICODE);
             exit;
         }
         $errors[] = "$pid: respuesta vacía";
@@ -1022,7 +1031,7 @@ function getRealDiff(){
 
 function saveToCacheBackground(cacheKey,q){
   const body={action:'cache_save',cache_key:cacheKey,question:{question:q.question,opts:q.opts,correct:q.correct,explanation:q.explanation}};
-  fetch(window.location.pathname,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()).then(d=>console.log('[cache] saved',cacheKey,d)).catch(e=>console.warn('[cache] save error',e));
+  fetch(window.location.pathname,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(()=>{});
 }
 
 async function loadQ(){
@@ -1039,14 +1048,12 @@ async function loadQ(){
       const cd=await cr.json();
       if(cd.cached&&cd.question){
         q=cd.question;
-        console.log('[cache] hit',cacheKey);
         lastProvider='cache';
       }
-    }catch(e){console.warn('[cache] get error',e);}
+    }catch(e){}
 
     // Cache miss → call AI
     if(!q){
-      console.log('[cache] miss',cacheKey);
       for(let attempt=0;attempt<3&&!q;attempt++){
         const d=await callAPI(getSys(obj),getUMsg(obj,sessIdx+1,battCnt,sessAsked));
         const txt=d.content?.[0]?.text||'';
