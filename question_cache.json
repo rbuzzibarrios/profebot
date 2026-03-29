@@ -1,0 +1,239 @@
+{
+    "mat::0::0::fácil": [
+        {
+            "question": "¿Cuál de estos es tu brazo derecho?",
+            "opts": {
+                "A": "El brazo con el que pateas la pelota.",
+                "B": "El brazo que está del mismo lado de tu oreja derecha.",
+                "C": "El brazo que está del lado de tu corazón.",
+                "D": "El brazo que está del mismo lado de tu pie izquierdo."
+            },
+            "correct": "B",
+            "explanation": "Tu brazo derecho está al mismo lado que tu oreja derecha."
+        },
+        {
+            "question": "¿De qué lado de tu cuerpo está el corazón?",
+            "opts": {
+                "A": "El lado de arriba",
+                "B": "El lado de abajo",
+                "C": "El lado izquierdo",
+                "D": "El lado derecho"
+            },
+            "correct": "C",
+            "explanation": "El corazón está en el lado izquierdo de nuestro cuerpo."
+        }
+    ],
+    "mat::0::1::media": [
+        {
+            "question": "¿Qué es más largo, un lápiz o un clip?",
+            "opts": {
+                "A": "El clip",
+                "B": "No se puede saber",
+                "C": "El lápiz",
+                "D": "Son iguales"
+            },
+            "correct": "C",
+            "explanation": "Un lápiz es generalmente más largo que un clip."
+        },
+        {
+            "question": "Si tu lápiz es más corto que la regla, ¿cómo es la regla?",
+            "opts": {
+                "A": "Más corta que el lápiz.",
+                "B": "Igual de larga que el lápiz.",
+                "C": "Más larga que el lápiz.",
+                "D": "De otro color que el lápiz."
+            },
+            "correct": "C",
+            "explanation": "Si el lápiz es más corto, la regla debe ser más larga."
+        }
+    ],
+    "mat::0::2::difícil": [
+        {
+            "question": "Tengo 5 caramelos. Si le doy 2 a mi amigo, ¿cuántos caramelos me quedan?",
+            "opts": {
+                "A": "2",
+                "B": "5",
+                "C": "3",
+                "D": "4"
+            },
+            "correct": "C",
+            "explanation": "Si tienes 5 caramelos y das 2, te quedan 3."
+        },
+        {
+            "question": "Tienes 6 flores. Si pones 4 en un florero, ¿cuántas quedan?",
+            "opts": {
+                "A": "4 flores",
+                "B": "3 flores",
+                "C": "2 flores",
+                "D": "6 flores"
+            },
+            "correct": "C",
+            "explanation": "De 6 flores, si quitas 4, quedan 2."
+        }
+    ],
+    "mat::0::3::fácil": [
+        {
+            "question": "Si tienes 5 manzanas y tu amigo tiene 3 naranjas, ¿quién tiene más frutas?",
+            "opts": {
+                "A": "Tu amigo tiene más frutas.",
+                "B": "Tú tienes más frutas.",
+                "C": "Los dos tienen la misma cantidad.",
+                "D": "Tú tienes menos frutas."
+            },
+            "correct": "B",
+            "explanation": "Cinco manzanas es más que tres naranjas."
+        },
+        {
+            "question": "Tú tienes 7 lápices. Tu amigo tiene 5. ¿Quién tiene más lápices?",
+            "opts": {
+                "A": "Tu amigo",
+                "B": "Los dos tienen igual",
+                "C": "Nadie tiene más",
+                "D": "Tú"
+            },
+            "correct": "D",
+            "explanation": "7 lápices son más que 5 lápices."
+        },
+        {
+            "question": "¿Qué cantidad de dulces es la mayor?",
+            "opts": {
+                "A": "2 dulces",
+                "B": "4 dulces",
+                "C": "5 dulces",
+                "D": "1 dulce"
+            },
+            "correct": "C",
+            "explanation": "Cinco dulces es la cantidad más grande."
+        }
+    ],
+    "mat::1::0::media": [
+        {
+            "question": "Si cuentas uno, dos, ¿qué número sigue después?",
+            "opts": {
+                "A": "Cuatro",
+                "B": "Dos",
+                "C": "Tres",
+                "D": "Cinco"
+            },
+            "correct": "C",
+            "explanation": "Después del dos, al contar, sigue el número tres."
+        }
+    ],
+    "mat::0::0::difícil": [
+        {
+            "question": "Si tu amigo te mira de frente y levanta la mano que está a tu izquierda, ¿qué mano levantó?",
+            "opts": {
+                "A": "La suya izquierda.",
+                "B": "La tuya izquierda.",
+                "C": "La suya derecha.",
+                "D": "La tuya derecha."
+            },
+            "correct": "C",
+            "explanation": "Tu amigo levantó su mano derecha porque, al estar de frente"
+        }
+    ],
+    "mat::0::1::difícil": [
+        {
+            "question": "Tienes tres cintas: roja, azul y verde. La roja es la más larga. La verde no es la más corta. ¿Cuál es la más corta?",
+            "opts": {
+                "A": "La roja",
+                "B": "La verde",
+                "C": "La azul",
+                "D": "No se sabe"
+            },
+            "correct": "C",
+            "explanation": "Si la roja es la más larga y la verde no es la más corta, la azul debe ser la más corta."
+        }
+    ],
+    "mat::0::3::difícil": [
+        {
+            "question": "Ana tiene 4 manzanas. Pedro tiene una menos que Ana. ¿Quién tiene menos?",
+            "opts": {
+                "A": "Ana",
+                "B": "No se puede saber",
+                "C": "Pedro",
+                "D": "Los dos tienen igual"
+            },
+            "correct": "C",
+            "explanation": "Pedro tiene 3 manzanas y Ana tiene 4, así que Pedro tiene menos."
+        }
+    ],
+    "mat::1::0::difícil": [
+        {
+            "question": "En una fila, tu amigo es el cuarto niño. ¿Cuántos niños están delante de él?",
+            "opts": {
+                "A": "4",
+                "B": "2",
+                "C": "3",
+                "D": "5"
+            },
+            "correct": "C",
+            "explanation": "Delante del cuarto niño están el primero, segundo y tercero, que son tres niños."
+        }
+    ],
+    "mat::0::1::fácil": [
+        {
+            "question": "Una soga es muy larga. Si la cortas mucho, ¿cómo se pone?",
+            "opts": {
+                "A": "Ancha",
+                "B": "Gruesa",
+                "C": "Corta",
+                "D": "Larga"
+            },
+            "correct": "C",
+            "explanation": "Si algo largo se corta mucho, su nueva medida es corta."
+        }
+    ],
+    "len::0::0::fácil": [
+        {
+            "question": "¿Cuál de estas palabras lleva el sonido de la \"ch\"?",
+            "opts": {
+                "A": "casa",
+                "B": "sol",
+                "C": "chico",
+                "D": "perro"
+            },
+            "correct": "C",
+            "explanation": "La palabra chico lleva el sonido y las letras \"ch\"."
+        }
+    ],
+    "len::0::1::media": [
+        {
+            "question": "Escucha bien. ¿En qué palabra oyes el sonido \"ch\"?",
+            "opts": {
+                "A": "chuleta",
+                "B": "olla",
+                "C": "perro",
+                "D": "mesa"
+            },
+            "correct": "A",
+            "explanation": "La palabra chuleta tiene el sonido de la \"ch\"."
+        }
+    ],
+    "mat::0::2::fácil": [
+        {
+            "question": "Tienes 5 bolitas. Si 3 son rojas, ¿cuántas bolitas son de otro color?",
+            "opts": {
+                "A": "1",
+                "B": "3",
+                "C": "2",
+                "D": "5"
+            },
+            "correct": "C",
+            "explanation": "Si tienes 5 bolitas y 3 son rojas, las otras 2 son de otro color."
+        }
+    ],
+    "mat::1::0::fácil": [
+        {
+            "question": "¿Cuál de estos números es el tres?",
+            "opts": {
+                "A": "1",
+                "B": "5",
+                "C": "3",
+                "D": "7"
+            },
+            "correct": "C",
+            "explanation": "El número 3 es el número tres."
+        }
+    ]
+}

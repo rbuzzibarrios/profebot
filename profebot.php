@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════
 
 // ── CACHE DE PREGUNTAS ──
-define('CACHE_FILE', is_dir('/var/data') ? '/var/data/question_cache.json' : __DIR__ . '/question_cache.json');
+define('CACHE_FILE', __DIR__ . '/question_cache.json');
 define('CACHE_MAX_PER_KEY', 50);
 
 function cache_read() {
