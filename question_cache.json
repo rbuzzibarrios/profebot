@@ -21,6 +21,39 @@
             },
             "correct": "C",
             "explanation": "El corazón está en el lado izquierdo de nuestro cuerpo."
+        },
+        {
+            "question": "¿De qué lado de tu cuerpo está la oreja izquierda?",
+            "opts": {
+                "A": "Derecha",
+                "B": "Izquierda",
+                "C": "Arriba",
+                "D": "Abajo"
+            },
+            "correct": "B",
+            "explanation": "La oreja izquierda se encuentra en el lado izquierdo del cuerpo."
+        },
+        {
+            "question": "¿Qué mano es tu mano izquierda?",
+            "opts": {
+                "A": "La que usas para aplaudir más fuerte.",
+                "B": "La que está en el lado derecho de tu cuerpo.",
+                "C": "La que está más cerca de tu corazón.",
+                "D": "La que usas para saludar a un amigo."
+            },
+            "correct": "C",
+            "explanation": "El corazón se encuentra en"
+        },
+        {
+            "question": "¿De qué lado está tu oreja izquierda?",
+            "opts": {
+                "A": "Arriba.",
+                "B": "La izquierda.",
+                "C": "Abajo.",
+                "D": "La derecha."
+            },
+            "correct": "B",
+            "explanation": "Tu oreja izquierda está en el lado izquierdo de tu cabeza."
         }
     ],
     "mat::0::1::media": [
@@ -45,6 +78,17 @@
             },
             "correct": "C",
             "explanation": "Si el lápiz es más corto, la regla debe ser más larga."
+        },
+        {
+            "question": "Cuando dos objetos tienen el mismo tamaño, ¿cómo decimos que son?",
+            "opts": {
+                "A": "Largos",
+                "B": "Cortos",
+                "C": "Iguales",
+                "D": "Diferentes"
+            },
+            "correct": "C",
+            "explanation": "Si dos objetos tienen el mismo tamaño o longitud, son iguales."
         }
     ],
     "mat::0::2::difícil": [
@@ -104,6 +148,28 @@
             },
             "correct": "C",
             "explanation": "Cinco dulces es la cantidad más grande."
+        },
+        {
+            "question": "¿Qué número es mayor, el 3 o el 5?",
+            "opts": {
+                "A": "3",
+                "B": "2",
+                "C": "5",
+                "D": "4"
+            },
+            "correct": "C",
+            "explanation": "El 5 es un número mayor que el 3."
+        },
+        {
+            "question": "Si tienes 4 lápices y tu amigo tiene 2, ¿quién tiene menos lápices?",
+            "opts": {
+                "A": "Tú",
+                "B": "Tu amigo",
+                "C": "Los dos tienen igual",
+                "D": "El maestro"
+            },
+            "correct": "B",
+            "explanation": "Dos lápices es menos cantidad que cuatro lápices."
         }
     ],
     "mat::1::0::media": [
@@ -117,6 +183,17 @@
             },
             "correct": "C",
             "explanation": "Después del dos, al contar, sigue el número tres."
+        },
+        {
+            "question": "Si tienes dos lápices y te regalan uno, ¿cuántos tienes en total?",
+            "opts": {
+                "A": "2",
+                "B": "4",
+                "C": "3",
+                "D": "1"
+            },
+            "correct": "C",
+            "explanation": "Dos lápices más uno es tres."
         }
     ],
     "mat::0::0::difícil": [
@@ -130,6 +207,28 @@
             },
             "correct": "C",
             "explanation": "Tu amigo levantó su mano derecha porque, al estar de frente"
+        },
+        {
+            "question": "Tu corazón está en tu izquierda. Si tu amigo te mira, ¿en qué lado de tu cuerpo ves su corazón?",
+            "opts": {
+                "A": "En su derecha",
+                "B": "En tu izquierda",
+                "C": "En tu derecha",
+                "D": "En su izquierda"
+            },
+            "correct": "C",
+            "explanation": "Si tu amigo te mira, su lado izquierdo, donde está su corazón, estará frente a"
+        },
+        {
+            "question": "Tienes un libro en tu lado derecho. Si lo pasas al lado opuesto, ¿dónde estará?",
+            "opts": {
+                "A": "En tu lado izquierdo.",
+                "B": "En el mismo lado.",
+                "C": "Adelante de ti.",
+                "D": "Atrás de ti."
+            },
+            "correct": "A",
+            "explanation": "El lado opuesto al lado derecho es el lado izquierdo."
         }
     ],
     "mat::0::1::difícil": [
@@ -143,6 +242,17 @@
             },
             "correct": "C",
             "explanation": "Si la roja es la más larga y la verde no es la más corta, la azul debe ser la más corta."
+        },
+        {
+            "question": "Lápiz azul es más largo que rojo. Azul es más corto que verde. ¿Cuál lápiz es el más largo?",
+            "opts": {
+                "A": "El azul",
+                "B": "El rojo",
+                "C": "El verde",
+                "D": "Son iguales"
+            },
+            "correct": "C",
+            "explanation": "El lápiz verde es más largo que el azul, y el azul es más largo que el rojo."
         }
     ],
     "mat::0::3::difícil": [
@@ -182,6 +292,39 @@
             },
             "correct": "C",
             "explanation": "Si algo largo se corta mucho, su nueva medida es corta."
+        },
+        {
+            "question": "¿Cuál de estas es más larga?",
+            "opts": {
+                "A": "Una mariposa",
+                "B": "Una hormiga",
+                "C": "Una culebra",
+                "D": "Una abeja"
+            },
+            "correct": "C",
+            "explanation": "Una culebra es mucho más larga que una mariposa, una hormiga o una abeja."
+        },
+        {
+            "question": "Tienes dos cintas. Una mide poco y la otra mide más. ¿Cómo es la que mide más?",
+            "opts": {
+                "A": "Corta",
+                "B": "Larga",
+                "C": "Igual",
+                "D": "Pequeña"
+            },
+            "correct": "B",
+            "explanation": "Si una cinta mide más que otra, significa que es más larga."
+        },
+        {
+            "question": "Si comparas un gusano y una serpiente, ¿cuál es más largo?",
+            "opts": {
+                "A": "El gusano",
+                "B": "La serpiente",
+                "C": "Los dos son cortos",
+                "D": "Los dos son largos"
+            },
+            "correct": "B",
+            "explanation": "Una serpiente es mucho más larga que un gusano."
         }
     ],
     "len::0::0::fácil": [
@@ -221,6 +364,28 @@
             },
             "correct": "C",
             "explanation": "Si tienes 5 bolitas y 3 son rojas, las otras 2 son de otro color."
+        },
+        {
+            "question": "Un conjunto de 3 flores se divide. Una parte tiene 1. ¿Cuántas tiene la otra?",
+            "opts": {
+                "A": "4",
+                "B": "1",
+                "C": "3",
+                "D": "2"
+            },
+            "correct": "D",
+            "explanation": "Si tienes 3 flores y separas 1, la otra parte tiene 2 flores."
+        },
+        {
+            "question": "Tienes 4 flores. ¿Cómo las puedes separar en dos grupos?",
+            "opts": {
+                "A": "Una flor y dos flores.",
+                "B": "Tres flores y tres flores.",
+                "C": "Dos flores y dos flores.",
+                "D": "Una flor y cuatro flores."
+            },
+            "correct": "C",
+            "explanation": "Cuatro flores se pueden separar en dos flores y dos flores."
         }
     ],
     "mat::1::0::fácil": [
@@ -234,6 +399,715 @@
             },
             "correct": "C",
             "explanation": "El número 3 es el número tres."
+        },
+        {
+            "question": "Si cuentas uno, dos, ¿qué número sigue?",
+            "opts": {
+                "A": "Uno",
+                "B": "Cuatro",
+                "C": "Dos",
+                "D": "Tres"
+            },
+            "correct": "D",
+            "explanation": "Después del uno y el dos, el número que sigue es el tres."
+        },
+        {
+            "question": "Si cuentas uno, dos, ¿qué número sigue?",
+            "opts": {
+                "A": "cuatro",
+                "B": "uno",
+                "C": "tres",
+                "D": "cinco"
+            },
+            "correct": "C",
+            "explanation": "Después de contar uno y dos, el siguiente número es tres."
+        },
+        {
+            "question": "¿Cuál de estos es el número tres?",
+            "opts": {
+                "A": "1",
+                "B": "2",
+                "C": "3",
+                "D": "4"
+            },
+            "correct": "C",
+            "explanation": "El número tres se escribe como 3."
+        }
+    ],
+    "mat::1::1::fácil": [
+        {
+            "question": "¿Cuántos dedos tienes en una mano?",
+            "opts": {
+                "A": "3",
+                "B": "4",
+                "C": "5",
+                "D": "6"
+            },
+            "correct": "C",
+            "explanation": "En una mano tenemos 5 dedos."
+        }
+    ],
+    "mat::1::2::fácil": [
+        {
+            "question": "Entre 5 y 2, ¿cuál es el número más grande?",
+            "opts": {
+                "A": "1",
+                "B": "5",
+                "C": "3",
+                "D": "2"
+            },
+            "correct": "B",
+            "explanation": "El número 5 es más grande que el número 2."
+        },
+        {
+            "question": "¿Cuál número es más grande, el 3 o el 5?",
+            "opts": {
+                "A": "3",
+                "B": "2",
+                "C": "5",
+                "D": "4"
+            },
+            "correct": "C",
+            "explanation": "El número 5 es mayor que el número 3."
+        }
+    ],
+    "mat::1::3::fácil": [
+        {
+            "question": "De estos números, ¿cuál es el más pequeño: 3, 5, 1?",
+            "opts": {
+                "A": "5",
+                "B": "3",
+                "C": "1",
+                "D": "2"
+            },
+            "correct": "C",
+            "explanation": "El número 1 es el más pequeño de los tres."
+        },
+        {
+            "question": "¿Qué número va justo antes del 3?",
+            "opts": {
+                "A": "1",
+                "B": "4",
+                "C": "2",
+                "D": "5"
+            },
+            "correct": "C",
+            "explanation": "Al contar, el número 2 está justo antes del 3."
+        }
+    ],
+    "mat::1::4::fácil": [
+        {
+            "question": "¿Cómo se llama la línea que empieza en cero y tiene una flecha?",
+            "opts": {
+                "A": "Un segmento",
+                "B": "Una línea curva",
+                "C": "Un rayo numérico",
+                "D": "Un círculo"
+            },
+            "correct": "C",
+            "explanation": "El rayo numérico inicia en un punto y se extiende en una dirección con una flecha."
+        },
+        {
+            "question": "¿Qué nos ayuda a ver los números en orden, como en una fila?",
+            "opts": {
+                "A": "Una torre de bloques.",
+                "B": "Un cajón de juguetes.",
+                "C": "El rayo numérico.",
+                "D": "Un cuento con números."
+            },
+            "correct": "C",
+            "explanation": "El rayo numérico muestra los números ordenados en una línea."
+        }
+    ],
+    "mat::1::5::fácil": [
+        {
+            "question": "Después del número \"primero\", ¿cuál ordinal sigue?",
+            "opts": {
+                "A": "tercero",
+                "B": "uno",
+                "C": "segundo",
+                "D": "cuarto"
+            },
+            "correct": "C",
+            "explanation": "Después de primero, el número ordinal que sigue es segundo."
+        }
+    ],
+    "mat::2::0::fácil": [
+        {
+            "question": "¿Cuánto es tres más dos?",
+            "opts": {
+                "A": "4",
+                "B": "5",
+                "C": "3",
+                "D": "6"
+            },
+            "correct": "B",
+            "explanation": "Al juntar tres y dos, obtenemos cinco."
+        }
+    ],
+    "mat::2::1::fácil": [
+        {
+            "question": "¿Cuánto es el resultado de sumar 3 más 4?",
+            "opts": {
+                "A": "6",
+                "B": "5",
+                "C": "7",
+                "D": "8"
+            },
+            "correct": "C",
+            "explanation": "Al juntar 3 y 4 se obtiene 7."
+        }
+    ],
+    "mat::2::2::fácil": [
+        {
+            "question": "Si tienes 2 lápices, te dan 1 y luego 3 más, ¿cuántos tienes?",
+            "opts": {
+                "A": "5",
+                "B": "7",
+                "C": "6",
+                "D": "4"
+            },
+            "correct": "C",
+            "explanation": "Al sumar 2 más 1 más 3, el total es 6 lápices."
+        }
+    ],
+    "mat::2::3::fácil": [
+        {
+            "question": "¿Cuánto es siete menos dos?",
+            "opts": {
+                "A": "4",
+                "B": "6",
+                "C": "5",
+                "D": "7"
+            },
+            "correct": "C",
+            "explanation": "Si a 7 le quitamos 2, nos quedan 5."
+        }
+    ],
+    "mat::3::0::fácil": [
+        {
+            "question": "¿Qué número sigue después del 15?",
+            "opts": {
+                "A": "14",
+                "B": "17",
+                "C": "16",
+                "D": "10"
+            },
+            "correct": "C",
+            "explanation": "Después del 15 sigue el número 16 al contar."
+        }
+    ],
+    "len::0::1::fácil": [
+        {
+            "question": "¿Qué palabra tiene el sonido que suena como \"CH\"?",
+            "opts": {
+                "A": "perro",
+                "B": "casa",
+                "C": "chaleco",
+                "D": "mesa"
+            },
+            "correct": "C",
+            "explanation": "La palabra chaleco tiene el sonido de la CH."
+        }
+    ],
+    "len::0::2::fácil": [
+        {
+            "question": "¿Qué palabra tiene el sonido de la \"ll\"?",
+            "opts": {
+                "A": "lápiz",
+                "B": "yate",
+                "C": "lluvia",
+                "D": "casa"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"lluvia\" lleva el dígrafo \"ll\"."
+        }
+    ],
+    "len::0::3::fácil": [
+        {
+            "question": "¿Qué palabra se escribe con las letras LL?",
+            "opts": {
+                "A": "Coche",
+                "B": "Mesa",
+                "C": "Pollo",
+                "D": "Sol"
+            },
+            "correct": "C",
+            "explanation": "La palabra pollo se escribe usando las letras ll."
+        },
+        {
+            "question": "¿Cuál de estas es la palabra \"lluvia\"?",
+            "opts": {
+                "A": "uvia",
+                "B": "juvia",
+                "C": "lluvia",
+                "D": "chuvia"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"lluvia\" se escribe con las letras LL."
+        }
+    ],
+    "len::1::0::fácil": [
+        {
+            "question": "¿Qué palabra de estas empieza con el sonido de la vocal A?",
+            "opts": {
+                "A": "Perro",
+                "B": "Mesa",
+                "C": "Amigo",
+                "D": "Sol"
+            },
+            "correct": "C",
+            "explanation": "La palabra Amigo empieza con el sonido de la vocal A."
+        }
+    ],
+    "len::0::0::difícil": [
+        {
+            "question": "¿En cuál palabra encuentras el dígrafo CH?",
+            "opts": {
+                "A": "Cachorro",
+                "B": "Carro",
+                "C": "Cohete",
+                "D": "Queso"
+            },
+            "correct": "A",
+            "explanation": "En la palabra \"cachorro\" encontramos las letras C y H juntas que forman un solo sonido."
+        },
+        {
+            "question": "¿Cuál palabra NO lleva el dígrafo CH?",
+            "opts": {
+                "A": "Leche",
+                "B": "Chico",
+                "C": "Coche",
+                "D": "Casa"
+            },
+            "correct": "D",
+            "explanation": "La palabra casa no tiene el dígrafo CH."
+        }
+    ],
+    "len::0::1::difícil": [
+        {
+            "question": "¿Cuál palabra tiene el dígrafo CH?",
+            "opts": {
+                "A": "caballo",
+                "B": "queso",
+                "C": "chaleco",
+                "D": "cohete"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"chaleco\" es la única que tiene el dígrafo CH."
+        },
+        {
+            "question": "¿Cuál palabra lleva el dígrafo CH?",
+            "opts": {
+                "A": "Jirafa",
+                "B": "Chaleco",
+                "C": "Queso",
+                "D": "Cocina"
+            },
+            "correct": "B",
+            "explanation": "Chaleco es la única palabra que contiene el dígrafo CH."
+        },
+        {
+            "question": "¿Cómo escribimos la palabra de lo que beben los bebés?",
+            "opts": {
+                "A": "Leshe",
+                "B": "Lelle",
+                "C": "Lece",
+                "D": "Leche"
+            },
+            "correct": "D",
+            "explanation": "La palabra que nombra lo que beben los bebés es leche y se escribe con CH."
+        },
+        {
+            "question": "¿Cuál palabra está escrita de forma correcta?",
+            "opts": {
+                "A": "Leche",
+                "B": "Leze",
+                "C": "Leshe",
+                "D": "Lleshe"
+            },
+            "correct": "A",
+            "explanation": "La palabra correcta es \"Leche\" y se escribe con el dígrafo CH."
+        }
+    ],
+    "len::0::2::difícil": [
+        {
+            "question": "¿En cuál de estas palabras se encuentra el dígrafo LL?",
+            "opts": {
+                "A": "yoyo",
+                "B": "palo",
+                "C": "pollo",
+                "D": "chivo"
+            },
+            "correct": "C",
+            "explanation": "La palabra pollo es la única que tiene el dígrafo LL."
+        },
+        {
+            "question": "¿Qué palabra lleva el dígrafo LL?",
+            "opts": {
+                "A": "Polo",
+                "B": "Pollo",
+                "C": "Poyo",
+                "D": "Bola"
+            },
+            "correct": "B",
+            "explanation": "La palabra 'pollo' se escribe con el dígrafo LL."
+        },
+        {
+            "question": "¿Cuál palabra de estas lleva el dígrafo ll?",
+            "opts": {
+                "A": "payaso",
+                "B": "rayo",
+                "C": "gallina",
+                "D": "libro"
+            },
+            "correct": "C",
+            "explanation": "La palabra gallina contiene el dígrafo ll."
+        }
+    ],
+    "len::0::3::difícil": [
+        {
+            "question": "¿Qué palabra de estas se escribe correctamente con LL?",
+            "opts": {
+                "A": "poyo",
+                "B": "polo",
+                "C": "pocho",
+                "D": "pollo"
+            },
+            "correct": "D",
+            "explanation": "La palabra pollo se escribe con las letras LL."
+        },
+        {
+            "question": "¿Qué palabra está bien escrita?",
+            "opts": {
+                "A": "yorar",
+                "B": "llorar",
+                "C": "lorar",
+                "D": "llover"
+            },
+            "correct": "B",
+            "explanation": "La palabra correcta es llorar, se escribe con el dígrafo ll."
+        },
+        {
+            "question": "¿Cuál de estas palabras lleva las letras LL?",
+            "opts": {
+                "A": "gato",
+                "B": "perro",
+                "C": "mesa",
+                "D": "gallina"
+            },
+            "correct": "D",
+            "explanation": "Gallina se escribe con las letras LL."
+        },
+        {
+            "question": "¿Cuál de estas palabras se escribe con LL?",
+            "opts": {
+                "A": "rayo",
+                "B": "arroyo",
+                "C": "pollo",
+                "D": "papaya"
+            },
+            "correct": "C",
+            "explanation": "La palabra pollo se escribe con LL, las otras opciones llevan Y."
+        }
+    ],
+    "len::1::0::difícil": [
+        {
+            "question": "¿Cuántas vocales escuchas en la palabra \"elefante\"?",
+            "opts": {
+                "A": "3",
+                "B": "5",
+                "C": "4",
+                "D": "6"
+            },
+            "correct": "C",
+            "explanation": "La palabra elefante tiene cuatro vocales: e, e, a, e."
+        }
+    ],
+    "len::1::4::fácil": [
+        {
+            "question": "¿Qué letra tiene la palabra CERA?",
+            "opts": {
+                "A": "Z",
+                "B": "C",
+                "C": "S",
+                "D": "V"
+            },
+            "correct": "B",
+            "explanation": "La palabra CERA se escribe con la letra C."
+        }
+    ],
+    "len::1::5::media": [
+        {
+            "question": "¿Qué palabra comienza con la letra N?",
+            "opts": {
+                "A": "Mano",
+                "B": "Luna",
+                "C": "Nene",
+                "D": "Rosa"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"Nene\" empieza con la letra N."
+        }
+    ],
+    "len::1::11::media": [
+        {
+            "question": "¿Cuál de estas palabras dice \"Mesa\"?",
+            "opts": {
+                "A": "Pesa",
+                "B": "Masa",
+                "C": "Mesa",
+                "D": "Sima"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"Mesa\" se escribe con M, e, s, a."
+        }
+    ],
+    "len::2::4::difícil": [
+        {
+            "question": "¿Qué palabra lleva la U con dos punticos arriba (diéresis)?",
+            "opts": {
+                "A": "guitarra",
+                "B": "cigüeña",
+                "C": "gallina",
+                "D": "manguera"
+            },
+            "correct": "B",
+            "explanation": "La palabra cigüeña lleva diéresis en la U."
+        }
+    ],
+    "len::3::2::fácil": [
+        {
+            "question": "¿Cuál de estas palabras tiene una sola sílaba?",
+            "opts": {
+                "A": "gato",
+                "B": "sol",
+                "C": "casa",
+                "D": "pato"
+            },
+            "correct": "B",
+            "explanation": "La palabra sol se pronuncia con un solo golpe de voz."
+        }
+    ],
+    "len::1::6::media": [
+        {
+            "question": "¿Cuál de estas palabras dice \"tren\"?",
+            "opts": {
+                "A": "dedo",
+                "B": "rana",
+                "C": "mesa",
+                "D": "tren"
+            },
+            "correct": "D",
+            "explanation": "La palabra \"tren\" comienza con la letra T."
+        }
+    ],
+    "len::1::7::difícil": [
+        {
+            "question": "¿Cuál de estas palabras dice \"dado\"?",
+            "opts": {
+                "A": "taza",
+                "B": "dado",
+                "C": "boca",
+                "D": "luna"
+            },
+            "correct": "B",
+            "explanation": "La palabra \"dado\" se escribe con la letra 'd' al inicio."
+        }
+    ],
+    "len::1::1::difícil": [
+        {
+            "question": "¿Cuántas veces escuchas el sonido \"M\" en la palabra \"mamífero\"?",
+            "opts": {
+                "A": "Una vez",
+                "B": "Tres veces",
+                "C": "Dos veces",
+                "D": "Cuatro veces"
+            },
+            "correct": "C",
+            "explanation": "En la palabra \"mamífero\" el sonido \"M\" se escucha dos veces, en la primera y en la segunda sílaba."
+        }
+    ],
+    "len::1::2::difícil": [
+        {
+            "question": "¿Cuál de estas palabras NO lleva el sonido de la 'P'?",
+            "opts": {
+                "A": "pulpo",
+                "B": "palma",
+                "C": "capa",
+                "D": "bola"
+            },
+            "correct": "D",
+            "explanation": "La palabra 'bola' no tiene el sonido de la 'P'."
+        }
+    ],
+    "len::1::3::difícil": [
+        {
+            "question": "¿Cuál palabra empieza con el sonido de la 'S' como en 'sapo'?",
+            "opts": {
+                "A": "Circo",
+                "B": "Zorro",
+                "C": "Mesa",
+                "D": "Sirena"
+            },
+            "correct": "D",
+            "explanation": "La palabra \"Sirena\" comienza con el sonido de la letra 'S'."
+        }
+    ],
+    "len::1::4::difícil": [
+        {
+            "question": "¿Qué palabra tiene el sonido de la 'C' como en 'cera'?",
+            "opts": {
+                "A": "Coco",
+                "B": "Cubo",
+                "C": "Cisne",
+                "D": "Casa"
+            },
+            "correct": "C",
+            "explanation": "La palabra 'cisne' tiene el sonido suave de la 'C' como en 'cera'."
+        }
+    ],
+    "len::1::5::difícil": [
+        {
+            "question": "¿Qué palabra NO tiene el sonido de la 'N' como en nene?",
+            "opts": {
+                "A": "Mono",
+                "B": "Manzana",
+                "C": "Mesa",
+                "D": "Nube"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"mesa\" no tiene el sonido de la letra N."
+        }
+    ],
+    "len::1::6::difícil": [
+        {
+            "question": "¿Qué palabra NO tiene el sonido de la letra 'T'?",
+            "opts": {
+                "A": "Pato",
+                "B": "Tren",
+                "C": "Sol",
+                "D": "Bota"
+            },
+            "correct": "C",
+            "explanation": "La palabra 'sol' no tiene el sonido de la letra 'T'."
+        }
+    ],
+    "len::1::8::difícil": [
+        {
+            "question": "¿Cuál de estas palabras NO tiene el sonido de la letra L?",
+            "opts": {
+                "A": "flor",
+                "B": "sol",
+                "C": "rana",
+                "D": "lima"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"rana\" no tiene el sonido de la letra L."
+        }
+    ],
+    "len::1::9::difícil": [
+        {
+            "question": "¿Qué palabra NO tiene el sonido de la letra F?",
+            "opts": {
+                "A": "Foca",
+                "B": "Pato",
+                "C": "Foto",
+                "D": "Feo"
+            },
+            "correct": "B",
+            "explanation": "La palabra Pato no tiene el sonido de la letra F."
+        }
+    ],
+    "len::1::10::difícil": [
+        {
+            "question": "¿Cuál palabra nombra un objeto largo para llevar agua?",
+            "opts": {
+                "A": "Tuvo",
+                "B": "Bota",
+                "C": "Vaso",
+                "D": "Tubo"
+            },
+            "correct": "D",
+            "explanation": "La palabra \"tubo\" con 'b' se refiere a un objeto largo para llevar agua, mientras que \"tuvo\" con 'v' es del verbo"
+        }
+    ],
+    "len::1::11::difícil": [
+        {
+            "question": "¿Qué palabra empieza con el sonido de la S, como en \"sol\"?",
+            "opts": {
+                "A": "Circo",
+                "B": "Zapato",
+                "C": "Sopa",
+                "D": "Casa"
+            },
+            "correct": "C",
+            "explanation": "Sopa empieza con el sonido y la letra \"S\"."
+        }
+    ],
+    "len::2::0::difícil": [
+        {
+            "question": "¿Qué palabra tiene la H muda y es lo que come el gallo?",
+            "opts": {
+                "A": "Huevo",
+                "B": "Guevo",
+                "C": "Hueso",
+                "D": "Ovejo"
+            },
+            "correct": "A",
+            "explanation": "El gallo come huevo, y la palabra \"huevo\" tiene la letra H que no suena."
+        }
+    ],
+    "len::2::1::difícil": [
+        {
+            "question": "¿Qué palabra tiene la \"H\" muda y está antes de \"hielo\" en el alfabeto?",
+            "opts": {
+                "A": "Higo",
+                "B": "Hada",
+                "C": "Hueso",
+                "D": "Horno"
+            },
+            "correct": "B",
+            "explanation": "La palabra \"Hada\" empieza con la H seguida de A, y la A va antes que la I de \""
+        }
+    ],
+    "len::2::2::difícil": [
+        {
+            "question": "¿Qué palabra tiene el sonido de la 'R' como en \"pero\"?",
+            "opts": {
+                "A": "carro",
+                "B": "perro",
+                "C": "loro",
+                "D": "torre"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"loro\" tiene el sonido suave de la 'R' entre vocales, igual que en \"pero\"."
+        }
+    ],
+    "len::2::3::difícil": [
+        {
+            "question": "¿Qué palabra tiene el sonido de la letra 'G' como en \"gato\"?",
+            "opts": {
+                "A": "Gitana",
+                "B": "Guerra",
+                "C": "Geranio",
+                "D": "Girasol"
+            },
+            "correct": "B",
+            "explanation": "La palabra \"gato\" tiene un sonido fuerte de la \"g\", igual que \"guerra\"."
+        }
+    ],
+    "mat::6::2::fácil": [
+        {
+            "question": "¿Qué forma tiene una línea recta?",
+            "opts": {
+                "A": "Curva.",
+                "B": "Ondulada.",
+                "C": "Derecha.",
+                "D": "Circular."
+            },
+            "correct": "C",
+            "explanation": "Una línea recta no tiene curvas, es totalmente derecha."
         }
     ]
 }
