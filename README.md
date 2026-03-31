@@ -1,17 +1,24 @@
 # ProfeBot 🦉
 
-Tutor interactivo con IA para estudiantes de 1° grado del currículo cubano (6-7 años). Genera preguntas de opción múltiple, las lee en voz alta y acepta respuestas por voz o toque.
+Tutor interactivo con IA para estudiantes del currículo cubano. Genera preguntas de opción múltiple, las lee en voz alta y acepta respuestas por voz o toque.
 
-## Materias
+## Grados
 
+### 📚 1° Grado (6-7 años)
 - **Matemática** — 7 unidades, 44 objetivos (espacial, números hasta 100, operaciones, geometría)
 - **Lengua Española** — 4 unidades, 35 objetivos (fonemas, dígrafos, grafemas, escritura)
+
+### 🧸 Prescolar — 5to y 6to año de vida (5-6 años)
+- **Nociones de Matemática** — conjuntos, cantidades, longitudes, resolución de problemas
+- **Comunicación y Literatura** — fonética, cuentos, poesías, fábulas, adivinanzas, trabalenguas
+- Preguntas simplificadas a 2 opciones (A/B), lenguaje concreto adaptado a la edad
 
 ## Características
 
 - Preguntas generadas por IA adaptadas al objetivo y dificultad seleccionados
 - Multi-proveedor con fallback automático (Groq, Gemini, Claude)
 - Síntesis de voz (TTS) y reconocimiento de voz en español
+- Opciones leídas secuencialmente con pausas naturales entre cada una
 - Cache de preguntas en servidor para reducir llamadas a la IA
 - Materiales de apoyo: subir PDF, pegar texto o URL
 - Modos estudio y evaluación con dificultad configurable
