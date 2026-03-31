@@ -1354,4 +1354,4 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 </body>
 </html>
 <?php
-// ── FIN DEL ARCHIVO ──
+// ── END OF FILE ──
