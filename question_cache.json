@@ -1109,5 +1109,348 @@
             "correct": "C",
             "explanation": "Una línea recta no tiene curvas, es totalmente derecha."
         }
+    ],
+    "preesc::len::0::0::fácil": [
+        {
+            "question": "¿Cuál palabra es más larga, nene o cafetera?",
+            "opts": {
+                "A": "nene",
+                "B": "cafetera",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Cafetera tiene más sonidos que nene."
+        }
+    ],
+    "preesc::len::0::1::media": [
+        {
+            "question": "¿Con qué sonido empieza la palabra taza?",
+            "opts": {
+                "A": "sonido T",
+                "B": "sonido P",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Taza empieza con el sonido T."
+        }
+    ],
+    "preesc::len::0::2::difícil": [
+        {
+            "question": "¿Con qué sonido termina la palabra periódicos?",
+            "opts": {
+                "A": "sonido O",
+                "B": "sonido S",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "La palabra periódicos termina con el sonido S."
+        }
+    ],
+    "preesc::len::0::3::fácil": [
+        {
+            "question": "¿Con qué sonido empieza la palabra mariposa?",
+            "opts": {
+                "A": "sonido M",
+                "B": "sonido P",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Mariposa empieza con el sonido M."
+        },
+        {
+            "question": "¿Qué palabra empieza con el sonido M?",
+            "opts": {
+                "A": "sapo",
+                "B": "mesa",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Mesa empieza con el sonido M."
+        }
+    ],
+    "preesc::len::0::4::media": [
+        {
+            "question": "Escucha: plátano, tomate. ¿Cuál palabra tiene el sonido L?",
+            "opts": {
+                "A": "plátano",
+                "B": "tomate",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Plátano tiene el sonido L."
+        }
+    ],
+    "preesc::len::0::1::fácil": [
+        {
+            "question": "¿Con qué sonido empieza la palabra limones?",
+            "opts": {
+                "A": "sonido L",
+                "B": "sonido P",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "La palabra limones empieza con el sonido L."
+        },
+        {
+            "question": "¿Con qué sonido empieza la palabra naranja?",
+            "opts": {
+                "A": "sonido L",
+                "B": "sonido N",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Naranja empieza con el sonido N."
+        }
+    ],
+    "preesc::len::0::2::fácil": [
+        {
+            "question": "¿Con qué sonido termina la palabra mamá?",
+            "opts": {
+                "A": "sonido A",
+                "B": "sonido I",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "La palabra mamá termina con el sonido A."
+        }
+    ],
+    "preesc::len::0::4::fácil": [
+        {
+            "question": "¿Cuál palabra empieza con el sonido L?",
+            "opts": {
+                "A": "gato",
+                "B": "luna",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Luna empieza con el sonido L."
+        }
+    ],
+    "preesc::mat::0::0::fácil": [
+        {
+            "question": "¿Cuál es rojo?",
+            "opts": {
+                "A": "Manzana",
+                "B": "Plátano",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "La manzana es roja."
+        }
+    ],
+    "preesc::mat::0::1::fácil": [
+        {
+            "question": "¿Cuál de estos es redondo?",
+            "opts": {
+                "A": "un balón",
+                "B": "una caja",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "El balón tiene forma redonda."
+        }
+    ],
+    "preesc::mat::0::2::fácil": [
+        {
+            "question": "¿Cuál de estas es la pelota más grande?",
+            "opts": {
+                "A": "la pequeña",
+                "B": "la grande",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "La pelota grande es la de mayor tamaño."
+        },
+        {
+            "question": "¿Qué es más alto?",
+            "opts": {
+                "A": "Un árbol",
+                "B": "Una flor",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Un árbol es más alto que una flor."
+        }
+    ],
+    "preesc::mat::0::3::fácil": [
+        {
+            "question": "Si tengo una manzana, una pera y un plátano, ¿qué son?",
+            "opts": {
+                "A": "verduras",
+                "B": "frutas",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Manzanas, peras y plátanos son frutas."
+        }
+    ],
+    "preesc::mat::0::4::fácil": [
+        {
+            "question": "Si hay frutas, ¿cuál no es una fruta?",
+            "opts": {
+                "A": "el balón",
+                "B": "la manzana",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "El balón no es una fruta."
+        },
+        {
+            "question": "Si tengo un perro, un gato y un carro, ¿cuál no es animal?",
+            "opts": {
+                "A": "el perro",
+                "B": "el carro",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "El carro no es un animal."
+        }
+    ],
+    "preesc::mat::1::0::fácil": [
+        {
+            "question": "Si tenemos juguetes, ¿cuál de estos es un juguete?",
+            "opts": {
+                "A": "un carro",
+                "B": "una cuchara",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "El carro es un juguete."
+        }
+    ],
+    "preesc::mat::1::1::fácil": [
+        {
+            "question": "Tengo una pelota y un carro. Tengo un carro y una muñeca. ¿Qué juguete se repite?",
+            "opts": {
+                "A": "muñeca",
+                "B": "carro",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "El carro está en los dos grupos de juguetes."
+        }
+    ],
+    "preesc::mat::1::2::fácil": [
+        {
+            "question": "Tienes pelotas grandes y pequeñas. Si las separas, ¿qué grupo puedes formar?",
+            "opts": {
+                "A": "pelotas rojas",
+                "B": "pelotas grandes",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Las pelotas grandes son un grupo de los que puedes formar."
+        }
+    ],
+    "preesc::mat::1::3::fácil": [
+        {
+            "question": "Si pones juntas las manzanas y las peras, ¿qué tienes?",
+            "opts": {
+                "A": "frutas",
+                "B": "ropa",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Las manzanas y las peras son frutas."
+        }
+    ],
+    "preesc::mat::2::0::fácil": [
+        {
+            "question": "Si tienes 3 dulces y tu amigo tiene 1, ¿quién tiene más?",
+            "opts": {
+                "A": "Tu amigo",
+                "B": "Tú",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Tienes 3 dulces y tu amigo solo 1."
+        }
+    ],
+    "preesc::mat::2::1::fácil": [
+        {
+            "question": "Si tienes 3 caramelos, ¿dónde hay igual cantidad?",
+            "opts": {
+                "A": "3 juguetes",
+                "B": "2 galletas",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Los 3 juguetes y los 3 caramelos tienen la misma cantidad."
+        }
+    ],
+    "preesc::mat::2::2::fácil": [
+        {
+            "question": "¿Cuántos dedos tienes en una mano?",
+            "opts": {
+                "A": "Cuatro",
+                "B": "Cinco",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "En una mano tenemos cinco dedos."
+        }
+    ],
+    "preesc::mat::2::3::fácil": [
+        {
+            "question": "En el patio hay seis niños. ¿Cuántos niños hay?",
+            "opts": {
+                "A": "Cinco",
+                "B": "Seis",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Hay seis niños en el patio."
+        }
+    ],
+    "preesc::mat::3::0::fácil": [
+        {
+            "question": "Imagina una serpiente y un gusano. ¿Cuál es más largo?",
+            "opts": {
+                "A": "La serpiente",
+                "B": "El gusano",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "La serpiente es mucho más larga que el gusano."
+        }
+    ],
+    "preesc::mat::3::1::fácil": [
+        {
+            "question": "¿Cuál es más alto, un árbol o una flor?",
+            "opts": {
+                "A": "Un árbol",
+                "B": "Una flor",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Los árboles son muy altos."
+        }
     ]
 }

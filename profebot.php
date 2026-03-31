@@ -867,7 +867,7 @@ function speak(txt,onEnd){
   u.lang='es-ES';u.rate=0.88;u.pitch=1.1;u.volume=1;
   setOwl('talking');setStatus('Leyendo...','talking');
   u.onend=()=>{setOwl('idle');setStatus('','');if(onEnd)onEnd();};
-  u.onerror=()=>{setOwl('idle');if(onEnd)onEnd();};
+  u.onerror=(e)=>{setOwl('idle');if(e.error!=='interrupted'&&onEnd)onEnd();};
   synth.speak(u);
 }
 function stopSpeak(){synth.cancel();setOwl('idle');setStatus('','');}
@@ -1084,33 +1084,54 @@ function getSys(obj){
   const g=GRADES[_grade];
   const isPreesc=_grade==='preesc';
   if(isPreesc){
+    const guiaMateria=obj.subjKey==='len'
+      ?`GUÍA PARA LENGUA Y LITERATURA:
+- Cuentos/fábulas: pregunta por personajes, colores, acciones concretas ("¿Qué encontró...?", "¿Quién hizo...?", "¿De qué color era...?")
+- Rimas/poesías: da el inicio de una frase y pregunta cuál palabra completa la rima
+- Adivinanzas: pon la adivinanza completa en la PREGUNTA y ofrece 2 respuestas posibles
+- Fonética: "¿Con qué sonido empieza la palabra X?" o "¿Cuál palabra empieza con el sonido M?"
+- NUNCA preguntes por "el mensaje", "la moraleja", "el tema", "representa" o "simboliza"
+- USA frases como: "¿Qué hizo...?", "¿Quién era...?", "¿Con qué letra empieza...?", "¿Qué le pasó a...?"`
+      :`GUÍA PARA MATEMÁTICA:
+- Usa objetos concretos: pelotas, manzanas, niños, juguetes
+- Conjuntos: "¿Cuál de estos NO es una fruta?", "¿Cuántas pelotas hay?"
+- Longitudes: "¿Cuál es más largo?", "¿Cuál es más alto?"
+- Cantidades: "¿Hay más o menos que...?", "¿Cuántos hay?"`;
     return`Eres un generador de preguntas de opción múltiple para ${g.label} (niños ${g.age}), currículo cubano.
 Materia: ${obj.subj}. Unidad: "${obj.unit}".
 
-INSTRUCCIONES ESTRICTAS:
+IMPORTANTE: El niño ESCUCHA la pregunta en voz alta, NO la lee. Lenguaje de un niño de 5-6 años.
+
+${guiaMateria}
+
+INSTRUCCIONES:
 1. Genera SOLO 2 opciones: A y B.
-2. Primero decide la respuesta correcta, colócala en A o B al azar.
+2. Coloca la respuesta correcta en A o B al azar.
 3. La otra opción debe ser INCORRECTA pero creíble.
 4. En CORRECTA: pon solo A o B.
-5. Lenguaje MUY simple — el niño tiene 5-6 años y escucha la pregunta en voz alta.
 
-FORMATO OBLIGATORIO (exactamente 5 líneas, sin texto extra, sin markdown, sin asteriscos):
-PREGUNTA: [máx 12 palabras, muy simple y concreta]
-A) [opción]
-B) [opción]
+FORMATO OBLIGATORIO (exactamente 5 líneas, sin texto extra, sin markdown):
+PREGUNTA: [máx 15 palabras, muy concreta]
+A) [1-4 palabras]
+B) [1-4 palabras]
 CORRECTA: [A o B]
-EXPLICACION: [1 oración muy corta y simple]
+EXPLICACION: [1 oración corta y simple]
 
-Ejemplo:
-PREGUNTA: ¿Cuál figura es redonda?
+Ejemplo lengua:
+PREGUNTA: ¿Con qué sonido empieza la palabra mamá?
+A) sonido S
+B) sonido M
+CORRECTA: B
+EXPLICACION: Mamá empieza con el sonido M.
+
+Ejemplo matemática:
+PREGUNTA: ¿Cuál figura tiene forma redonda?
 A) cuadrado
 B) círculo
 CORRECTA: B
-EXPLICACION: El círculo tiene forma redonda.
+EXPLICACION: El círculo es redondo.
 
-VERIFICA antes de responder: la letra en CORRECTA debe coincidir con la opción correcta.
-
-PROHIBIDO: preguntas que necesiten ver imágenes. Todo debe entenderse SOLO con palabras simples.${buildCtx(obj.subjKey)}`;
+PROHIBIDO: palabras abstractas, conceptos que un niño de 5 años no conoce, preguntas que necesiten ver imágenes.${buildCtx(obj.subjKey)}`;
   }
   return`Eres un generador de preguntas de múltiple opción para ${g.label} (niños ${g.age}), currículo cubano.
 Materia: ${obj.subj}. Unidad: "${obj.unit}".
@@ -1258,7 +1279,13 @@ function readQuestion(q){if(!q)return;speak(`Pregunta ${sessIdx+1}. ${q.question
 function readOptions(q){
   if(!q)return;
   const ls=['A','B','C','D'].filter(l=>q.opts[l]);
-  speak(ls.map(l=>`Opción ${l}: ${q.opts[l]}`).join('. ')+'. ¿Cuál elegís?',()=>{if(useSR&&SR&&!currentQ?.chosen)startListening();});
+  let i=0;
+  function next(){
+    if(q.chosen)return;
+    if(i<ls.length){const l=ls[i++];speak(`Opción ${l}: ${q.opts[l]}`,next);}
+    else speak('¿Cuál elegís?',()=>{if(useSR&&SR&&!currentQ?.chosen)startListening();});
+  }
+  next();
 }
 
 function chooseAns(letter){
