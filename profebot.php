@@ -319,6 +319,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
   cursor:pointer;font-family:'Nunito',sans-serif;font-size:.85rem;font-weight:800;color:var(--muted);transition:all .2s;text-align:center;}
 .stab.am{border-color:var(--blue);background:#EEF6FF;color:var(--blue);}
 .stab.al{border-color:var(--green);background:#E8F8EF;color:var(--green);}
+.grade-tabs{display:flex;gap:8px;margin-bottom:10px;}
+.gtab{flex:1;padding:9px 7px;border-radius:11px;border:2.5px solid var(--border);background:white;
+  cursor:pointer;font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:800;color:var(--muted);transition:all .2s;text-align:center;}
+.gtab.ag{border-color:var(--purple);background:#F5F0FF;color:var(--purple);}
 .selrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
 .selcount{font-size:.72rem;font-weight:800;color:var(--muted);}
 .lnk{font-size:.7rem;font-weight:800;cursor:pointer;color:var(--blue);text-decoration:underline;background:none;border:none;font-family:'Nunito',sans-serif;}
@@ -560,7 +564,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
 
   <!-- OBJECTIVES -->
   <div class="card">
-    <div class="subj-tabs">
+    <div class="grade-tabs">
+      <button class="gtab ag" onclick="switchGrade('1ro',this)">📚 1° Grado</button>
+      <button class="gtab" onclick="switchGrade('preesc',this)">🧸 Prescolar</button>
+    </div>
+    <div class="subj-tabs" id="subjTabs">
       <button class="stab am" onclick="switchSubj('mat',this)">🔢 Matemática</button>
       <button class="stab" onclick="switchSubj('len',this)">🗣️ Lengua</button>
     </div>
@@ -670,25 +678,102 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;displ
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 // ── CURRICULUM ──
-const CUR={
-  mat:{label:'Matemática',icon:'🔢',color:'#4A90D9',units:[
-    {name:'Articulación espacial y conjuntos',objs:['Distinguir izquierda y derecha','Comparar longitudes: largo, corto, igual','Descomponer conjuntos en partes','Comparar conjuntos por cantidad']},
-    {name:'Números naturales hasta 10',objs:['Reconocer el número natural tres','Contar números del 1 al 5','Comparar números del 1 al 5','Ordenar números hasta 5','Identificar el rayo numérico','Reconocer los números ordinales']},
-    {name:'Adición y sustracción hasta 10',objs:['Resolver la adición 3 + 2','Resolver la adición 3 + 4','Sumar varios sumandos hasta 10','Restar con resultado hasta 10']},
-    {name:'Números naturales hasta 20',objs:['Contar los números del 11 al 20','Reconocer los números del 18 al 19']},
-    {name:'Adición y sustracción hasta 20',objs:['Sumar hasta 20','Restar hasta 20']},
-    {name:'Números naturales hasta 100',objs:['Contar los números del 21 al 100']},
-    {name:'Geometría',objs:['Medir con el centímetro','Identificar puntos y rectas','Reconocer y comparar segmentos','Trazar rectas con regla','Reconocer el triángulo','Reconocer el rectángulo','Reconocer el cuadrado','Reconocer el círculo']}
-  ]},
-  len:{label:'Lengua Española',icon:'🗣️',color:'#4CAF7D',units:[
-    {name:'Dígrafos CH y LL',objs:['Reconocer el dígrafo CH (leche, chico)','Usar CH en palabras','Reconocer el dígrafo LL (llave, lluvia)','Usar LL en palabras']},
-    {name:'Fonemas vocálicos y M→S,Z,C',objs:['Pronunciar las vocales','Fonema M (mamá, mesa)','Fonema P (papá, pato)','Fonema S (sapo, sol)','Fonema Z/C (zapato, cera)','Fonema N (nene, nota)','Fonema T (toro, tela)','Fonema D (dedo, dado)','Fonema L (luna, lana)','Fonema F (foca, feo)','Fonema B/V (barco, vaca)','Leer sílabas directas']},
-    {name:'Fonemas H→W y orden alfabético',objs:['La H muda (huevo, hotel)','R suave y fuerte (loro, rosa)','RR vs R intervocálica','Fonema G/GU (gato, guerra)','Diéresis GÜ (pingüino)','Fonema J (jirafa, caja)','Fonema K/QU (queso)','Fonema X (examen)','Fonema W (wafle)','El orden alfabético','Ordenar palabras alfabéticamente']},
-    {name:'Grafemas y escritura',objs:['Escribir letras minúsculas','Escribir letras mayúsculas','Palabras monosílabas (sol, mar)','Palabras bisílabas (casa, mesa)','Completar oraciones simples']}
-  ]}
+const GRADES={
+  '1ro':{
+    label:'1° Grado', age:'6-7 años',
+    subjects:{
+      mat:{label:'Matemática',icon:'🔢',color:'#4A90D9',units:[
+        {name:'Articulación espacial y conjuntos',objs:['Distinguir izquierda y derecha','Comparar longitudes: largo, corto, igual','Descomponer conjuntos en partes','Comparar conjuntos por cantidad']},
+        {name:'Números naturales hasta 10',objs:['Reconocer el número natural tres','Contar números del 1 al 5','Comparar números del 1 al 5','Ordenar números hasta 5','Identificar el rayo numérico','Reconocer los números ordinales']},
+        {name:'Adición y sustracción hasta 10',objs:['Resolver la adición 3 + 2','Resolver la adición 3 + 4','Sumar varios sumandos hasta 10','Restar con resultado hasta 10']},
+        {name:'Números naturales hasta 20',objs:['Contar los números del 11 al 20','Reconocer los números del 18 al 19']},
+        {name:'Adición y sustracción hasta 20',objs:['Sumar hasta 20','Restar hasta 20']},
+        {name:'Números naturales hasta 100',objs:['Contar los números del 21 al 100']},
+        {name:'Geometría',objs:['Medir con el centímetro','Identificar puntos y rectas','Reconocer y comparar segmentos','Trazar rectas con regla','Reconocer el triángulo','Reconocer el rectángulo','Reconocer el cuadrado','Reconocer el círculo']}
+      ]},
+      len:{label:'Lengua Española',icon:'🗣️',color:'#4CAF7D',units:[
+        {name:'Dígrafos CH y LL',objs:['Reconocer el dígrafo CH (leche, chico)','Usar CH en palabras','Reconocer el dígrafo LL (llave, lluvia)','Usar LL en palabras']},
+        {name:'Fonemas vocálicos y M→S,Z,C',objs:['Pronunciar las vocales','Fonema M (mamá, mesa)','Fonema P (papá, pato)','Fonema S (sapo, sol)','Fonema Z/C (zapato, cera)','Fonema N (nene, nota)','Fonema T (toro, tela)','Fonema D (dedo, dado)','Fonema L (luna, lana)','Fonema F (foca, feo)','Fonema B/V (barco, vaca)','Leer sílabas directas']},
+        {name:'Fonemas H→W y orden alfabético',objs:['La H muda (huevo, hotel)','R suave y fuerte (loro, rosa)','RR vs R intervocálica','Fonema G/GU (gato, guerra)','Diéresis GÜ (pingüino)','Fonema J (jirafa, caja)','Fonema K/QU (queso)','Fonema X (examen)','Fonema W (wafle)','El orden alfabético','Ordenar palabras alfabéticamente']},
+        {name:'Grafemas y escritura',objs:['Escribir letras minúsculas','Escribir letras mayúsculas','Palabras monosílabas (sol, mar)','Palabras bisílabas (casa, mesa)','Completar oraciones simples']}
+      ]}
+    }
+  },
+  'preesc':{
+    label:'Prescolar', age:'5-6 años',
+    subjects:{
+      mat:{label:'Nociones Matemáticas',icon:'🔢',color:'#4A90D9',units:[
+        {name:'Conjuntos cualitativos (5to año)',objs:[
+          'Agrupar objetos por su color',
+          'Agrupar objetos por su forma',
+          'Agrupar objetos por su tamaño',
+          'Reconocer la característica común de un conjunto',
+          'Identificar el elemento que sobra en un conjunto'
+        ]},
+        {name:'Relaciones entre conjuntos (5to año)',objs:[
+          'Identificar el elemento que falta en un conjunto',
+          'Encontrar el elemento común entre dos conjuntos',
+          'Separar un conjunto en dos grupos',
+          'Reunir dos conjuntos en uno solo'
+        ]},
+        {name:'Cantidades y comparación (5to año)',objs:[
+          'Comparar cantidades: más que / menos que',
+          'Reconocer conjuntos con igual cantidad',
+          'Contar objetos hasta 5',
+          'Contar objetos hasta 10'
+        ]},
+        {name:'Longitudes y medida (6to año)',objs:[
+          'Comparar longitudes: largo y corto',
+          'Comparar alturas: alto y bajo',
+          'Ordenar objetos de mayor a menor',
+          'Medir con una unidad no convencional'
+        ]},
+        {name:'Problemas sencillos (6to año)',objs:[
+          'Resolver un problema sencillo de unión de conjuntos',
+          'Resolver un problema sencillo de separación de conjuntos',
+          'Realizar operaciones combinadas con conjuntos'
+        ]}
+      ]},
+      len:{label:'Comunicación y Literatura',icon:'🗣️',color:'#4CAF7D',units:[
+        {name:'Análisis fónico (6to año)',objs:[
+          'Comparar palabras largas y cortas',
+          'Identificar el sonido inicial de una palabra',
+          'Identificar el sonido final de una palabra',
+          'Reconocer el sonido M en palabras (mamá, mesa)',
+          'Reconocer el sonido L en palabras (luna, loma)',
+          'Reconocer el sonido S en palabras (sol, camisa)',
+          'Contar sonidos en palabras cortas (pez, mar, sol)'
+        ]},
+        {name:'Comprensión de cuentos (5to y 6to año)',objs:[
+          'Identificar personajes de un cuento',
+          'Recordar la acción principal de un cuento',
+          'Recordar el final de un cuento',
+          'Identificar colores y características de personajes',
+          'Ordenar eventos de un cuento'
+        ]},
+        {name:'Fábulas y su mensaje (5to y 6to año)',objs:[
+          'Identificar el personaje principal de una fábula',
+          'Comprender el mensaje (moraleja) de una fábula',
+          'Reconocer la enseñanza de una historia'
+        ]},
+        {name:'Poesías y rimas (5to y 6to año)',objs:[
+          'Completar una rima sencilla',
+          'Reconocer palabras que riman',
+          'Identificar de qué trata una poesía'
+        ]},
+        {name:'Adivinanzas y trabalenguas (5to y 6to año)',objs:[
+          'Resolver una adivinanza sencilla',
+          'Identificar la respuesta correcta a una adivinanza',
+          'Reconocer un trabalenguas y sus palabras'
+        ]}
+      ]}
+    }
+  }
 };
+function getCUR(){return GRADES[_grade].subjects;}
 
 // ── STATE ──
+let _grade='1ro';
 let _subj='mat', selObjs=new Set(), sources=[];
 let battMode='study', battCnt=10, battDiff='mixto';
 let useTTS=true, useSR=true;
@@ -841,8 +926,31 @@ function switchSubj(s,btn){
   btn.classList.add(s==='mat'?'am':'al');
   // Deselect other subject, select all of current
   selObjs.clear();
-  CUR[s].units.forEach((u,ui)=>u.objs.forEach((_,oi)=>selObjs.add(`${s}::${ui}::${oi}`)));
+  getCUR()[s].units.forEach((u,ui)=>u.objs.forEach((_,oi)=>selObjs.add(`${s}::${ui}::${oi}`)));
   renderUnits();
+}
+function switchGrade(gk,btn){
+  _grade=gk;
+  document.querySelectorAll('.gtab').forEach(b=>b.className='gtab');
+  btn.classList.add('ag');
+  // Reset subject to first of this grade
+  _subj=Object.keys(GRADES[gk].subjects)[0];
+  selObjs.clear();
+  // Re-render subject tabs and objectives
+  renderSubjTabs();
+  getCUR()[_subj].units.forEach((u,ui)=>u.objs.forEach((_,oi)=>selObjs.add(`${_subj}::${ui}::${oi}`)));
+  renderUnits();
+  // Swap default materials for this grade
+  sources=sources.filter(s=>!s.grade);
+  ['srcList','urlList'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  loadDefaultMaterials();
+}
+function renderSubjTabs(){
+  const subjs=GRADES[_grade].subjects;
+  document.getElementById('subjTabs').innerHTML=Object.entries(subjs).map(([k,s])=>{
+    const actCls=k===_subj?(k==='mat'?'am':'al'):'';
+    return`<button class="stab ${actCls}" onclick="switchSubj('${k}',this)">${s.icon} ${s.label}</button>`;
+  }).join('');
 }
 function pickChip(btn,rid,cls){document.querySelectorAll('#'+rid+' .chip').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
 function getChip(rid){return document.querySelector('#'+rid+' .chip.on')?.dataset.v;}
@@ -853,7 +961,11 @@ function toggleMat(){const b=document.getElementById('matBody'),a=document.getEl
 
 // ── OBJECTIVES ──
 function renderUnits(){
-  const data=CUR[_subj];
+  const data=getCUR()[_subj];
+  if(!data||!data.units.length){
+    document.getElementById('unitList').innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted);font-size:.82rem;line-height:1.6">📚 El contenido de <strong>${GRADES[_grade].label}</strong> está en preparación.<br>¡Volvé pronto!</div>`;
+    updSel();return;
+  }
   document.getElementById('unitList').innerHTML=data.units.map((u,ui)=>{
     const rows=u.objs.map((o,oi)=>{
       const k=`${_subj}::${ui}::${oi}`,chk=selObjs.has(k);
@@ -866,7 +978,7 @@ function renderUnits(){
 }
 function toggleUnit(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open');}
 function toggleObj(k,v){v?selObjs.add(k):selObjs.delete(k);const el=document.getElementById('or-'+k.replace(/::/g,'_'));if(el)el.classList.toggle('chk',v);updSel();}
-function selAll(v){Object.entries(CUR).forEach(([s,subj])=>subj.units.forEach((u,ui)=>u.objs.forEach((_,oi)=>{const k=`${s}::${ui}::${oi}`;v?selObjs.add(k):selObjs.delete(k);})));renderUnits();}
+function selAll(v){Object.entries(getCUR()).forEach(([s,subj])=>subj.units.forEach((u,ui)=>u.objs.forEach((_,oi)=>{const k=`${s}::${ui}::${oi}`;v?selObjs.add(k):selObjs.delete(k);})));renderUnits();}
 function updSel(){document.getElementById('selCount').textContent=`${selObjs.size} objetivo${selObjs.size!==1?'s':''}`;}
 
 // ── MATERIALS ──
@@ -902,17 +1014,32 @@ function rmSrc(id){sources=sources.filter(s=>s.id!==id);const el=document.getEle
 
 // ── AUTO-LOAD DEFAULT MATERIALS (.txt) ──
 const DEFAULT_MATERIALS=[
-  {file:'materiales/leng_libro_antiguo.txt',name:'Libro Lengua (antiguo)',subj:'leng'},
-  {file:'materiales/leng_libro.txt',name:'¡A leer! 1er. Grado',subj:'leng'},
-  {file:'materiales/leng_cuaderno.txt',name:'Cuaderno Escritura',subj:'leng'},
-  {file:'materiales/mat_libro_antiguo.txt',name:'Libro Matemática (antiguo)',subj:'mat'},
-  {file:'materiales/mat_libro.txt',name:'Matemática 1er. Grado',subj:'mat'},
-  {file:'materiales/mat_cuaderno.txt',name:'Cuaderno Matemática',subj:'mat'}
+  {file:'materiales/leng_libro_antiguo.txt',name:'Libro Lengua (antiguo)',subj:'leng',grade:'1ro'},
+  {file:'materiales/leng_libro.txt',name:'¡A leer! 1er. Grado',subj:'leng',grade:'1ro'},
+  {file:'materiales/leng_cuaderno.txt',name:'Cuaderno Escritura',subj:'leng',grade:'1ro'},
+  {file:'materiales/mat_libro_antiguo.txt',name:'Libro Matemática (antiguo)',subj:'mat',grade:'1ro'},
+  {file:'materiales/mat_libro.txt',name:'Matemática 1er. Grado',subj:'mat',grade:'1ro'},
+  {file:'materiales/mat_cuaderno.txt',name:'Cuaderno Matemática',subj:'mat',grade:'1ro'},
+  // Prescolar — Matemática
+  {file:'materiales/preesc_mat_conjuntos.txt',name:'Nociones Matemáticas: Conjuntos (5to)',subj:'mat',grade:'preesc'},
+  {file:'materiales/preesc_mat_problemas.txt',name:'Solución de Problemas Sencillos (6to)',subj:'mat',grade:'preesc'},
+  {file:'materiales/preesc_mat_operaciones.txt',name:'Operaciones Combinadas de Conjuntos (6to)',subj:'mat',grade:'preesc'},
+  {file:'materiales/preesc_mat_longitudes.txt',name:'Trabajo con Longitudes (6to)',subj:'mat',grade:'preesc'},
+  // Prescolar — Comunicación y Literatura
+  {file:'materiales/preesc_len_fonico.txt',name:'Cuaderno de Análisis Fónico (6to)',subj:'len',grade:'preesc'},
+  {file:'materiales/preesc_len_cuentos.txt',name:'Cuentos para el 5to año de vida',subj:'len',grade:'preesc'},
+  {file:'materiales/preesc_len_poesias.txt',name:'Poesías para el 5to año de vida',subj:'len',grade:'preesc'},
+  {file:'materiales/preesc_len_adivinanzas.txt',name:'Adivinanzas 5to y 6to año',subj:'len',grade:'preesc'},
+  {file:'materiales/preesc_len_fabulas.txt',name:'Fábulas para el 5to año de vida',subj:'len',grade:'preesc'},
+  {file:'materiales/preesc_len_6to_cuentos.txt',name:'Cuentos para el 6to año de vida',subj:'len',grade:'preesc'},
+  {file:'materiales/preesc_len_6to_poesias.txt',name:'Poesías para el 6to año de vida',subj:'len',grade:'preesc'},
+  {file:'materiales/preesc_len_6to_fabulas.txt',name:'Fábulas para el 6to año de vida',subj:'len',grade:'preesc'},
+  {file:'materiales/preesc_len_trabalenguas.txt',name:'Trabalenguas para el 6to año de vida',subj:'len',grade:'preesc'}
 ];
 async function loadDefaultMaterials(){
-  for(const {file,name,subj} of DEFAULT_MATERIALS){
+  for(const {file,name,subj,grade} of DEFAULT_MATERIALS.filter(m=>m.grade===_grade)){
     const id='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-    const src={type:'pdf',id,name,subj,content:'',status:'loading'};sources.push(src);rSrc(src);
+    const src={type:'pdf',id,name,subj,grade,content:'',status:'loading'};sources.push(src);rSrc(src);
     try{
       const r=await fetch(file);if(!r.ok)throw 0;
       const txt=await r.text();
@@ -925,7 +1052,7 @@ async function loadDefaultMaterials(){
 // ── SESSION ──
 function getActiveObjs(){
   const list=[];
-  selObjs.forEach(k=>{const[s,ui,oi]=k.split('::');const subj=CUR[s];if(!subj)return;const unit=subj.units[+ui];if(!unit)return;list.push({k,subjKey:s,subj:subj.label,unit:unit.name,obj:unit.objs[+oi],color:subj.color});});
+  selObjs.forEach(k=>{const[s,ui,oi]=k.split('::');const subj=GRADES[_grade].subjects[s];if(!subj)return;const unit=subj.units[+ui];if(!unit)return;list.push({k,subjKey:s,subj:subj.label,unit:unit.name,obj:unit.objs[+oi],color:subj.color});});
   return list;
 }
 function startAuto(){
@@ -940,21 +1067,52 @@ function _init(){
   sessQs=[];sessIdx=0;sessCorr=0;sessWrong=0;sessAsked=[];
   showS('sVoice');
   document.getElementById('vTitle').textContent=sessIsAuto?'🎲 Batería aleatoria':sessMode==='eval'?'📋 Evaluación':'💪 Práctica';
-  document.getElementById('vSub').textContent=`1° Grado · ${battCnt} preguntas`;
+  document.getElementById('vSub').textContent=`${GRADES[_grade].label} · ${battCnt} preguntas`;
   updVProg();loadQ();
 }
 function retrySession(){sessQs=[];sessIdx=0;sessCorr=0;sessWrong=0;sessAsked=[];showS('sVoice');updVProg();loadQ();}
 
 // ── API CALL (via local PHP proxy) ──
 function buildCtx(subjKey){
-  const ok=sources.filter(s=>s.status==='ok'&&(!s.subj||s.subj===subjKey));
+  const ok=sources.filter(s=>s.status==='ok'&&(!s.subj||s.subj===subjKey)&&(!s.grade||s.grade===_grade));
   if(!ok.length)return '';
   let c='\n\n=== MATERIALES DE REFERENCIA ===\nUsá este contenido como guía para el nivel y estilo de las preguntas. Si el tema no aparece en el material, generá la pregunta igualmente basándote en el objetivo.\n\n';
   ok.forEach((s,i)=>{c+=`--- ${i+1}: ${s.name.slice(0,50)} ---\n${s.content}\n\n`;});
   return c+'=== FIN ===\n';
 }
 function getSys(obj){
-  return`Eres un generador de preguntas de múltiple opción para 1° grado (niños 6-7 años), currículo cubano.
+  const g=GRADES[_grade];
+  const isPreesc=_grade==='preesc';
+  if(isPreesc){
+    return`Eres un generador de preguntas de opción múltiple para ${g.label} (niños ${g.age}), currículo cubano.
+Materia: ${obj.subj}. Unidad: "${obj.unit}".
+
+INSTRUCCIONES ESTRICTAS:
+1. Genera SOLO 2 opciones: A y B.
+2. Primero decide la respuesta correcta, colócala en A o B al azar.
+3. La otra opción debe ser INCORRECTA pero creíble.
+4. En CORRECTA: pon solo A o B.
+5. Lenguaje MUY simple — el niño tiene 5-6 años y escucha la pregunta en voz alta.
+
+FORMATO OBLIGATORIO (exactamente 5 líneas, sin texto extra, sin markdown, sin asteriscos):
+PREGUNTA: [máx 12 palabras, muy simple y concreta]
+A) [opción]
+B) [opción]
+CORRECTA: [A o B]
+EXPLICACION: [1 oración muy corta y simple]
+
+Ejemplo:
+PREGUNTA: ¿Cuál figura es redonda?
+A) cuadrado
+B) círculo
+CORRECTA: B
+EXPLICACION: El círculo tiene forma redonda.
+
+VERIFICA antes de responder: la letra en CORRECTA debe coincidir con la opción correcta.
+
+PROHIBIDO: preguntas que necesiten ver imágenes. Todo debe entenderse SOLO con palabras simples.${buildCtx(obj.subjKey)}`;
+  }
+  return`Eres un generador de preguntas de múltiple opción para ${g.label} (niños ${g.age}), currículo cubano.
 Materia: ${obj.subj}. Unidad: "${obj.unit}".
 
 INSTRUCCIONES ESTRICTAS:
@@ -1045,7 +1203,7 @@ async function loadQ(){
   document.getElementById('vContent').innerHTML=`<div class="vloading"><div class="ldots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div><p>Pregunta ${sessIdx+1} de ${battCnt}...</p></div>`;
   const obj=pickObj();if(!obj)return;
   const realDiff=getRealDiff();
-  const cacheKey=obj.k+'::'+realDiff;
+  const cacheKey=_grade+'::'+obj.k+'::'+realDiff;
   try{
     // Try cache first
     let q=null;
@@ -1140,7 +1298,7 @@ function showReport(){
   const msg=msgs.find(([t])=>pct>=t)[1];
   document.getElementById('repHero').innerHTML=`<div style="font-size:.66rem;font-weight:800;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px">${sessIsAuto?'🎲 Batería aleatoria':sessMode==='eval'?'📋 Evaluación':'💪 Práctica'}</div><div class="rep-big">${corr}<span style="font-size:1.4rem;color:rgba(255,255,255,.3)"> / ${tot}</span></div><div class="rep-pct">${pct}% correctas</div><div class="rep-stars">${stars}</div><div class="rep-msg">${msg}</div>`;
   document.getElementById('repList').innerHTML=sessQs.map((q,i)=>{const ok=q.chosen===q.correct;return`<div class="ri ${ok?'ok':'ko'}"><div class="ri-top"><span class="ri-n">P${i+1}</span><span class="ri-q">${esc(q.question)}</span><span>${ok?'✅':'❌'}</span></div><div class="ri-a ${ok?'ri-aok':'ri-ako'}">${q.chosen?esc(q.chosen+') '+q.opts[q.chosen]):'—'}</div>${!ok&&q.correct?`<div class="ri-a ri-aok">Correcta: ${esc(q.correct+') '+q.opts[q.correct])}</div>`:''} ${q.explanation?`<div class="ri-ex">💡 ${esc(q.explanation)}</div>`:''}</div>`;}).join('');
-  saveResult({date:new Date().toISOString(),mode:sessIsAuto?'auto':sessMode,isAuto:sessIsAuto,total:tot,correct:corr,pct,stars,battCnt,battDiff,subjsUsed:[...new Set(sessQs.map(q=>q.subjLabel))],questions:sessQs.map(q=>({obj:q.objText,q:q.question,chosen:q.chosen,correct:q.correct,ok:q.chosen===q.correct}))});
+  saveResult({date:new Date().toISOString(),mode:sessIsAuto?'auto':sessMode,isAuto:sessIsAuto,grade:_grade,gradeLabel:GRADES[_grade].label,total:tot,correct:corr,pct,stars,battCnt,battDiff,subjsUsed:[...new Set(sessQs.map(q=>q.subjLabel))],questions:sessQs.map(q=>({obj:q.objText,q:q.question,chosen:q.chosen,correct:q.correct,ok:q.chosen===q.correct}))});
   if(useTTS)speak(pct>=60?'¡Muy bien! Terminaste.':'Terminaste. ¡Seguí practicando!');
 }
 
@@ -1153,14 +1311,15 @@ function renderHist(){
   const h=loadH();const el=document.getElementById('histContent');
   if(!h.length){el.innerHTML='<div class="hempty">📭 Sin sesiones aún.</div>';return;}
   const mi={study:'💪',eval:'📋',auto:'🎲'},mc={study:'var(--green)',eval:'var(--blue)',auto:'var(--orange)'};
-  el.innerHTML=`<div class="hlist">${h.map(s=>{const d=new Date(s.date);const ds=d.toLocaleDateString('es',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});const col=mc[s.mode]||'var(--blue)';return`<div class="hitem"><div class="hitem-top"><div class="hico" style="background:${col}33;color:${col}">${mi[s.mode]||'📋'}</div><div class="hinfo"><h4>${ds}</h4><span>${(s.subjsUsed||[]).join(' + ')||'—'} · ${s.battCnt||s.total} pregs</span></div><div class="hsc"><div class="hpct" style="color:${col}">${s.pct}%</div><div>${s.stars}</div></div></div><div class="hbar"><div class="hfill" style="width:${s.pct}%;background:${col}"></div></div></div>`;}).join('')}</div>`;
+  el.innerHTML=`<div class="hlist">${h.map(s=>{const d=new Date(s.date);const ds=d.toLocaleDateString('es',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});const col=mc[s.mode]||'var(--blue)';const glbl=s.gradeLabel||'1° Grado';return`<div class="hitem"><div class="hitem-top"><div class="hico" style="background:${col}33;color:${col}">${mi[s.mode]||'📋'}</div><div class="hinfo"><h4>${ds}</h4><span>${glbl} · ${(s.subjsUsed||[]).join(' + ')||'—'} · ${s.battCnt||s.total} pregs</span></div><div class="hsc"><div class="hpct" style="color:${col}">${s.pct}%</div><div>${s.stars}</div></div></div><div class="hbar"><div class="hfill" style="width:${s.pct}%;background:${col}"></div></div></div>`;}).join('')}</div>`;
 }
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ── INIT ──
 (function(){
-  CUR[_subj].units.forEach((u,ui)=>u.objs.forEach((_,oi)=>selObjs.add(`${_subj}::${ui}::${oi}`)));
+  renderSubjTabs();
+  getCUR()[_subj].units.forEach((u,ui)=>u.objs.forEach((_,oi)=>selObjs.add(`${_subj}::${ui}::${oi}`)));
   renderUnits();updSel();initApiUI();loadDefaultMaterials();
   if(!SR){useSR=false;document.getElementById('srToggle').classList.remove('on');checkSR();}
 })();
