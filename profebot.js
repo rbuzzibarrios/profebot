@@ -864,7 +864,7 @@ async function callAPI(sys, userMsg) {
     const order = PROV_ORDER.filter(p => !!keys[p]);
     // Si no hay keys locales, enviar orden default (backend usará env vars)
     const sendOrder = order.length ? order : PROV_ORDER;
-    const r = await fetch(window.location.pathname, {
+    const r = await fetch('profebot.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -918,7 +918,7 @@ function saveToCacheBackground(cacheKey, q) {
         cache_key: cacheKey,
         question: { question: q.question, opts: q.opts, correct: q.correct, explanation: q.explanation }
     };
-    fetch(window.location.pathname, {
+    fetch('profebot.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -939,7 +939,7 @@ async function loadQ() {
         // Try cache first
         let q = null;
         try {
-            const cr = await fetch(window.location.pathname, {
+            const cr = await fetch('profebot.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'cache_get', cache_key: cacheKey, exclude: sessAsked })
