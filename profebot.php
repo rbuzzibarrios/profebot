@@ -9,6 +9,18 @@
 define('CACHE_FILE', __DIR__.'/question_cache.json');
 define('CACHE_MAX_PER_KEY', 50);
 
+// Cargar .env si existe (local con php -S)
+$CONFIG_KEYS = [];
+if (file_exists(__DIR__ . '/.env')) {
+    foreach (file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if ($line[0] === '#' || strpos($line, '=') === false) continue;
+        [$k, $v] = explode('=', $line, 2);
+        putenv(trim($k) . '=' . trim($v));
+    }
+}
+// Cargar config.php si existe (InfinityFree u otro hosting sin env vars)
+@include __DIR__ . '/config.php';
+
 function cache_read()
 {
     if (!file_exists(CACHE_FILE)) {
@@ -206,6 +218,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $k = '';
         if (!empty($clientKeys[$pid])) {
             $k = $clientKeys[$pid];
+        } elseif (!empty($CONFIG_KEYS[$pid])) {
+            $k = $CONFIG_KEYS[$pid];
         } elseif (getenv($PROVIDERS[$pid]['env'])) {
             $k = getenv($PROVIDERS[$pid]['env']);
         }
