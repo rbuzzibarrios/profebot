@@ -581,106 +581,26 @@ function rmSrc(id) {
     if (el) el.remove();
 }
 
-// ── AUTO-LOAD DEFAULT MATERIALS (.txt) ──
-const DEFAULT_MATERIALS = [
-    { file: 'materiales/leng_libro_antiguo.txt', name: 'Libro Lengua (antiguo)', subj: 'leng', grade: '1ro' },
-    { file: 'materiales/leng_libro.txt', name: '¡A leer! 1er. Grado', subj: 'leng', grade: '1ro' },
-    { file: 'materiales/leng_cuaderno.txt', name: 'Cuaderno Escritura', subj: 'leng', grade: '1ro' },
-    { file: 'materiales/mat_libro_antiguo.txt', name: 'Libro Matemática (antiguo)', subj: 'mat', grade: '1ro' },
-    { file: 'materiales/mat_libro.txt', name: 'Matemática 1er. Grado', subj: 'mat', grade: '1ro' },
-    { file: 'materiales/mat_cuaderno.txt', name: 'Cuaderno Matemática', subj: 'mat', grade: '1ro' },
-    // Prescolar — Matemática
-    {
-        file: 'materiales/preesc_mat_conjuntos.txt',
-        name: 'Nociones Matemáticas: Conjuntos (5to)',
-        subj: 'mat',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_mat_problemas.txt',
-        name: 'Solución de Problemas Sencillos (6to)',
-        subj: 'mat',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_mat_operaciones.txt',
-        name: 'Operaciones Combinadas de Conjuntos (6to)',
-        subj: 'mat',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_mat_longitudes.txt',
-        name: 'Trabajo con Longitudes (6to)',
-        subj: 'mat',
-        grade: 'preesc'
-    },
-    // Prescolar — Comunicación y Literatura
-    {
-        file: 'materiales/preesc_len_fonico.txt',
-        name: 'Cuaderno de Análisis Fónico (6to)',
-        subj: 'len',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_len_cuentos.txt',
-        name: 'Cuentos para el 5to año de vida',
-        subj: 'len',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_len_poesias.txt',
-        name: 'Poesías para el 5to año de vida',
-        subj: 'len',
-        grade: 'preesc'
-    },
-    { file: 'materiales/preesc_len_adivinanzas.txt', name: 'Adivinanzas 5to y 6to año', subj: 'len', grade: 'preesc' },
-    {
-        file: 'materiales/preesc_len_fabulas.txt',
-        name: 'Fábulas para el 5to año de vida',
-        subj: 'len',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_len_6to_cuentos.txt',
-        name: 'Cuentos para el 6to año de vida',
-        subj: 'len',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_len_6to_poesias.txt',
-        name: 'Poesías para el 6to año de vida',
-        subj: 'len',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_len_6to_fabulas.txt',
-        name: 'Fábulas para el 6to año de vida',
-        subj: 'len',
-        grade: 'preesc'
-    },
-    {
-        file: 'materiales/preesc_len_trabalenguas.txt',
-        name: 'Trabalenguas para el 6to año de vida',
-        subj: 'len',
-        grade: 'preesc'
-    }
-];
-
+// ── AUTO-LOAD DEFAULT MATERIALS (metadata only; contenido lo inyecta el backend) ──
 async function loadDefaultMaterials() {
-    for (const { file, name, subj, grade } of DEFAULT_MATERIALS.filter(m => m.grade === _grade)) {
-        const id = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-        const src = { type: 'pdf', id, name, subj, grade, content: '', status: 'loading' };
-        sources.push(src);
-        rSrc(src);
-        try {
-            const r = await fetch(file);
-            if (!r.ok) throw 0;
-            const txt = await r.text();
-            src.content = txt.trim().slice(0, 3000);
-            src.status = src.content.length > 10 ? 'ok' : 'err';
-        } catch {
-            src.status = 'err';
+    let list = [];
+    try {
+        const r = await fetch('profebot.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'materials_meta', grade: _grade })
+        });
+        if (r.ok) {
+            const d = await r.json();
+            list = d.materials || [];
         }
+    } catch (e) {
+        console.warn('materials_meta failed', e);
+    }
+    for (const { name, subj, grade } of list) {
+        const id = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+        const src = { type: 'pdf', id, name, subj, grade, content: '', status: 'ok', server: true };
+        sources.push(src);
         rSrc(src);
     }
 }
@@ -751,7 +671,8 @@ function retrySession() {
 
 // ── API CALL (via local PHP proxy) ──
 function buildCtx(subjKey) {
-    const ok = sources.filter(s => s.status === 'ok' && (!s.subj || s.subj === subjKey) && (!s.grade || s.grade === _grade));
+    // Defaults (server:true) los inyecta el backend; acá solo materiales subidos por el usuario
+    const ok = sources.filter(s => s.status === 'ok' && !s.server && s.content && (!s.subj || s.subj === subjKey) && (!s.grade || s.grade === _grade));
     if (!ok.length) return '';
     let c = '\n\n=== MATERIALES DE REFERENCIA ===\nUsá este contenido como guía para el nivel y estilo de las preguntas. Si el tema no aparece en el material, generá la pregunta igualmente basándote en el objetivo.\n\n';
     ok.forEach((s, i) => {
@@ -859,7 +780,7 @@ function getUMsg(obj, n, tot, prev) {
 
 let lastProvider = '';
 
-async function callAPI(sys, userMsg) {
+async function callAPI(sys, userMsg, subjKey) {
     const keys = getProviderKeys();
     const order = PROV_ORDER.filter(p => !!keys[p]);
     // Si no hay keys locales, enviar orden default (backend usará env vars)
@@ -871,7 +792,9 @@ async function callAPI(sys, userMsg) {
             system: sys,
             messages: [{ role: 'user', content: userMsg }],
             providers: keys,
-            provider_order: sendOrder
+            provider_order: sendOrder,
+            material_grade: _grade,
+            material_subj: subjKey || ''
         })
     });
     if (!r.ok) {
@@ -955,7 +878,7 @@ async function loadQ() {
         // Cache miss → call AI
         if (!q) {
             for (let attempt = 0; attempt < 3 && !q; attempt++) {
-                const d = await callAPI(getSys(obj), getUMsg(obj, sessIdx + 1, battCnt, sessAsked));
+                const d = await callAPI(getSys(obj), getUMsg(obj, sessIdx + 1, battCnt, sessAsked), obj.subjKey);
                 const txt = d.content?.[0]?.text || '';
                 q = parseQ(txt);
                 if (!q) console.warn('parseQ retry', attempt + 1, 'on:', txt);

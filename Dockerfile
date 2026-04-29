@@ -3,10 +3,11 @@ COPY profebot.php /app/
 COPY profebot.html /app/
 COPY profebot.css /app/
 COPY profebot.js /app/
+COPY router.php /app/
 COPY favicon.svg /app/
 COPY materiales/ /app/materiales/
 COPY question_cache.json /app/
 COPY google*.html /app/
 WORKDIR /app
 EXPOSE 8080
-CMD php -S 0.0.0.0:${PORT:-8080}
+CMD php -S 0.0.0.0:${PORT:-8080} /app/router.php

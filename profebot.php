@@ -9,6 +9,57 @@
 define('CACHE_FILE', __DIR__.'/question_cache.json');
 define('CACHE_MAX_PER_KEY', 50);
 
+// ── MATERIALES (lectura server-side; nunca expuestos por HTTP) ──
+define('MATERIALS_DIR', __DIR__.'/materiales');
+define('MATERIAL_MAX_CHARS', 3000);
+
+$DEFAULT_MATERIALS = [
+    ['file' => 'leng_libro_antiguo.txt', 'name' => 'Libro Lengua (antiguo)', 'subj' => 'leng', 'grade' => '1ro'],
+    ['file' => 'leng_libro.txt', 'name' => '¡A leer! 1er. Grado', 'subj' => 'leng', 'grade' => '1ro'],
+    ['file' => 'leng_cuaderno.txt', 'name' => 'Cuaderno Escritura', 'subj' => 'leng', 'grade' => '1ro'],
+    ['file' => 'mat_libro_antiguo.txt', 'name' => 'Libro Matemática (antiguo)', 'subj' => 'mat', 'grade' => '1ro'],
+    ['file' => 'mat_libro.txt', 'name' => 'Matemática 1er. Grado', 'subj' => 'mat', 'grade' => '1ro'],
+    ['file' => 'mat_cuaderno.txt', 'name' => 'Cuaderno Matemática', 'subj' => 'mat', 'grade' => '1ro'],
+    ['file' => 'preesc_mat_conjuntos.txt', 'name' => 'Nociones Matemáticas: Conjuntos (5to)', 'subj' => 'mat', 'grade' => 'preesc'],
+    ['file' => 'preesc_mat_problemas.txt', 'name' => 'Solución de Problemas Sencillos (6to)', 'subj' => 'mat', 'grade' => 'preesc'],
+    ['file' => 'preesc_mat_operaciones.txt', 'name' => 'Operaciones Combinadas de Conjuntos (6to)', 'subj' => 'mat', 'grade' => 'preesc'],
+    ['file' => 'preesc_mat_longitudes.txt', 'name' => 'Trabajo con Longitudes (6to)', 'subj' => 'mat', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_fonico.txt', 'name' => 'Cuaderno de Análisis Fónico (6to)', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_cuentos.txt', 'name' => 'Cuentos para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_poesias.txt', 'name' => 'Poesías para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_adivinanzas.txt', 'name' => 'Adivinanzas 5to y 6to año', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_fabulas.txt', 'name' => 'Fábulas para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_6to_cuentos.txt', 'name' => 'Cuentos para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_6to_poesias.txt', 'name' => 'Poesías para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_6to_fabulas.txt', 'name' => 'Fábulas para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_len_trabalenguas.txt', 'name' => 'Trabalenguas para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
+];
+
+function build_default_ctx($grade, $subj, $materials)
+{
+    $matches = array_values(array_filter($materials, function ($m) use ($grade, $subj) {
+        return $m['grade'] === $grade && $m['subj'] === $subj;
+    }));
+    if (empty($matches)) return '';
+    $ctx = "\n\n=== MATERIALES DEL CURRÍCULO ===\nUsá este contenido como guía para el nivel y estilo de las preguntas. Si el tema no aparece en el material, generá la pregunta igualmente basándote en el objetivo.\n\n";
+    $i = 1;
+    foreach ($matches as $m) {
+        $path = MATERIALS_DIR.'/'.$m['file'];
+        if (!is_readable($path)) continue;
+        $raw = @file_get_contents($path);
+        if ($raw === false) continue;
+        $content = trim($raw);
+        if (function_exists('mb_substr')) {
+            $content = mb_substr($content, 0, MATERIAL_MAX_CHARS);
+        } else {
+            $content = substr($content, 0, MATERIAL_MAX_CHARS);
+        }
+        $ctx .= "--- $i: ".substr($m['name'], 0, 50)." ---\n$content\n\n";
+        $i++;
+    }
+    return $ctx."=== FIN ===\n";
+}
+
 // Cargar .env si existe (local con php -S)
 $CONFIG_KEYS = [];
 if (file_exists(__DIR__ . '/.env')) {
@@ -80,6 +131,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo json_encode(['cached' => true, 'question' => $pick]);
                 }
             }
+            exit;
+        }
+
+        if ($data['action'] === 'materials_meta') {
+            $grade = isset($data['grade']) ? $data['grade'] : '';
+            $list = array_values(array_filter($DEFAULT_MATERIALS, function ($m) use ($grade) {
+                return !$grade || $m['grade'] === $grade;
+            }));
+            $out = array_map(function ($m) {
+                return ['name' => $m['name'], 'subj' => $m['subj'], 'grade' => $m['grade']];
+            }, $list);
+            echo json_encode(['materials' => $out], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
@@ -235,8 +298,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Inyectar contexto de materiales del currículo (server-side)
+    if (!empty($data['material_grade']) && !empty($data['material_subj'])) {
+        $extra = build_default_ctx($data['material_grade'], $data['material_subj'], $DEFAULT_MATERIALS);
+        if ($extra) {
+            $data['system'] = (isset($data['system']) ? $data['system'] : '').$extra;
+        }
+    }
+
     // Limpiar campos de control del body antes de enviar al proveedor
-    unset($data['providers'], $data['provider_order']);
+    unset($data['providers'], $data['provider_order'], $data['material_grade'], $data['material_subj']);
 
     // Fallback loop
     $errors = [];

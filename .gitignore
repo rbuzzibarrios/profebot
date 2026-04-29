@@ -2,3 +2,5 @@
 .claude/
 .env
 config.php
+.htaccess
+.idea/

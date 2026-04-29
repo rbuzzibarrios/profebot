@@ -1,0 +1,19 @@
+# Copiar a .htaccess y agregar API keys con SetEnv si tu hosting lo requiere.
+# Ejemplo: SetEnv GEMINI_API_KEY "tu-key-aqui"
+
+# Bloquear acceso directo a archivos privados
+<Files "question_cache.json">
+    Require all denied
+</Files>
+<Files "config.php">
+    Require all denied
+</Files>
+<Files ".env">
+    Require all denied
+</Files>
+<FilesMatch "\.(py|sql|md|yaml|yml|original)$">
+    Require all denied
+</FilesMatch>
+RedirectMatch 403 ^/materiales(/|$)
+RedirectMatch 403 (^|/)\.idea(/|$)
+RedirectMatch 403 (^|/)\.git(/|$)
