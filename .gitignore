@@ -1,3 +1,4 @@
 *.pdf
 .claude/
 .env
+config.php

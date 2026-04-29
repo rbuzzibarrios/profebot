@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+    <title>ProfeBot — Tutor interactivo con IA para Prescolar y 1° grado</title>
+    <meta name="description"
+          content="Tutor educativo con inteligencia artificial para Prescolar (5-6 años) y 1° grado (6-7 años) del currículo cubano. Genera preguntas de Matemática y Lengua Española con voz interactiva."/>
+    <meta name="keywords"
+          content="tutor IA, educación primaria, prescolar, 1er grado, currículo cubano, matemática, lengua española, nociones matemáticas, comunicación y literatura, preguntas interactivas, aprendizaje con voz"/>
+    <meta name="author" content="ProfeBot"/>
+    <meta name="robots" content="index, follow"/>
+    <link rel="canonical" href="https://buzziprofebot.onrender.com/profebot.php"/>
+    <meta property="og:title" content="ProfeBot — Tutor interactivo con IA para Prescolar y 1° grado"/>
+    <meta property="og:description"
+          content="Genera preguntas de opción múltiple con IA, las lee en voz alta y acepta respuestas por voz. Prescolar y 1° grado, currículo cubano."/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="https://buzziprofebot.onrender.com/profebot.php"/>
+    <meta property="og:locale" content="es_CU"/>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Baloo+2:wght@700;800&display=swap"
+          rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+    <link rel="stylesheet" href="profebot.css"/>
+</head>
+<body>
+
+<!-- ══ SETUP SCREEN ══ -->
+<div class="screen active" id="s0">
+    <div class="setup-hdr">
+        <span class="mascot">🦉</span>
+        <h1>ProfeBot Voz</h1>
+        <p>🎙️ ¡Yo te leo todo en voz alta!</p>
+    </div>
+
+    <!-- PROVEEDORES -->
+    <div id="apiSection">
+        <div class="prov-section" id="provConfig">
+            <div class="prov-title">🔑 Configurar Proveedores de IA</div>
+
+            <div class="prov-row" id="provRow_claude">
+                <div class="prov-hdr" onclick="toggleProv('claude')">
+                    <span>🟠 Claude</span>
+                    <span class="prov-status" id="provSt_claude">❌</span>
+                </div>
+                <div class="prov-body" id="provBody_claude">
+                    <p>Obtené tu key en <a href="https://console.anthropic.com/settings/keys"
+                                           target="_blank"><strong>console.anthropic.com</strong></a> → API Keys.
+                    </p>
+                    <div class="api-row">
+                        <input class="api-inp" type="password" id="provInp_claude" placeholder="sk-ant-..."/>
+                        <button class="api-save" onclick="saveProv('claude')">Guardar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prov-row" id="provRow_groq">
+                <div class="prov-hdr" onclick="toggleProv('groq')">
+                    <span>⚡ Groq</span>
+                    <span class="prov-status" id="provSt_groq">❌</span>
+                </div>
+                <div class="prov-body" id="provBody_groq">
+                    <p>Obtené tu key en <a href="https://console.groq.com/keys" target="_blank"><strong>console.groq.com/keys</strong></a>
+                        → Create API Key.</p>
+                    <div class="api-row">
+                        <input class="api-inp" type="password" id="provInp_groq" placeholder="gsk_..."/>
+                        <button class="api-save" onclick="saveProv('groq')">Guardar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prov-row" id="provRow_gemini">
+                <div class="prov-hdr" onclick="toggleProv('gemini')">
+                    <span>💎 Gemini</span>
+                    <span class="prov-status" id="provSt_gemini">❌</span>
+                </div>
+                <div class="prov-body" id="provBody_gemini">
+                    <p>Obtené tu key en <a href="https://aistudio.google.com/apikey" target="_blank"><strong>aistudio.google.com/apikey</strong></a>
+                        → Create API Key.</p>
+                    <div class="api-row">
+                        <input class="api-inp" type="password" id="provInp_gemini" placeholder="AIza..."/>
+                        <button class="api-save" onclick="saveProv('gemini')">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="api-ok" id="apiOk" style="display:none"><span id="apiOkTxt">✅ 1 proveedor configurado.</span>
+            <span style="margin-left:auto;cursor:pointer;text-decoration:underline;font-size:.7rem"
+                  onclick="showProvConfig()">Cambiar</span></div>
+    </div>
+
+    <!-- OBJECTIVES -->
+    <div class="card">
+        <div class="grade-tabs">
+            <button class="gtab ag" onclick="switchGrade('1ro',this)">📚 1° Grado</button>
+            <button class="gtab" onclick="switchGrade('preesc',this)">🧸 Prescolar</button>
+        </div>
+        <div class="subj-tabs" id="subjTabs">
+            <button class="stab am" onclick="switchSubj('mat',this)">🔢 Matemática</button>
+            <button class="stab" onclick="switchSubj('len',this)">🗣️ Lengua</button>
+        </div>
+        <div class="selrow">
+            <span class="selcount" id="selCount">0 objetivos</span>
+            <div style="display:flex;gap:7px">
+                <button class="lnk" onclick="selAll(true)">✅ Todos</button>
+                <button class="lnk" onclick="selAll(false)">◻ Ninguno</button>
+            </div>
+        </div>
+        <div class="unit-list" id="unitList"></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="card">
+        <div class="sec">🎮 Modo</div>
+        <div class="row2" id="modeRow">
+            <button class="chip cg on" data-v="study" onclick="pickChip(this,'modeRow','cg')">💪 Practicar</button>
+            <button class="chip cb" data-v="eval" onclick="pickChip(this,'modeRow','cb')">📋 Evaluar</button>
+        </div>
+        <div class="sec" style="margin-top:10px">🔢 Preguntas</div>
+        <div class="row2" id="cntRow">
+            <button class="chip cg" data-v="5" onclick="pickChip(this,'cntRow','cg')">5</button>
+            <button class="chip cg on" data-v="10" onclick="pickChip(this,'cntRow','cg')">10</button>
+            <button class="chip cg" data-v="15" onclick="pickChip(this,'cntRow','cg')">15</button>
+            <button class="chip cg" data-v="20" onclick="pickChip(this,'cntRow','cg')">20</button>
+        </div>
+        <div class="sec" style="margin-top:10px">⚡ Dificultad</div>
+        <div class="row2" id="diffRow">
+            <button class="chip cb" data-v="fácil" onclick="pickChip(this,'diffRow','cb')">😊 Fácil</button>
+            <button class="chip cb on" data-v="mixto" onclick="pickChip(this,'diffRow','cb')">🎯 Mixta</button>
+            <button class="chip cb" data-v="difícil" onclick="pickChip(this,'diffRow','cb')">🔥 Difícil</button>
+        </div>
+        <div class="sec" style="margin-top:10px">🎙️ Voz</div>
+        <div class="row2">
+            <button class="vtog on" id="ttsToggle" onclick="toggleTTS()">🔊 Leer preguntas</button>
+            <button class="vtog on" id="srToggle" onclick="toggleSR()">🎤 Escuchar respuesta</button>
+        </div>
+        <div id="noVoiceWarn" class="novoice" style="display:none">⚠️ Sin reconocimiento de voz — usá Chrome/Edge.
+            Podés tocar los botones.
+        </div>
+    </div>
+
+    <!-- MATERIALS -->
+    <div class="card">
+        <div class="sec" style="cursor:pointer" onclick="toggleMat()">📁 Materiales propios (opcional) <span
+                    id="matArr">▼</span></div>
+        <div id="matBody" style="display:none">
+            <div class="drop" id="dropZ" ondragover="event.preventDefault();this.classList.add('dg')"
+                 ondragleave="this.classList.remove('dg')" ondrop="onDrop(event)">
+                <input type="file" accept=".pdf" multiple onchange="handleFiles(this.files)"/>
+                <span style="font-size:1.5rem">📄</span>
+                <p style="font-size:.75rem;font-weight:700;color:var(--muted);margin-top:2px">PDF o <strong
+                            style="color:var(--purple)">clic para elegir</strong></p>
+            </div>
+            <div class="slist" id="srcList"></div>
+            <div class="warn" style="margin-top:6px">⚠️ Algunos sitios bloquean el acceso externo.</div>
+            <div class="urow">
+                <input class="uinp" id="urlInp" type="url" placeholder="https://..."/>
+                <button class="smbtn sb" onclick="addUrl()">+ URL</button>
+            </div>
+            <div class="slist" id="urlList"></div>
+        </div>
+    </div>
+
+    <button class="abtn o" onclick="startAuto()">🎲 ¡Batería aleatoria!</button>
+    <button class="abtn g" onclick="startManual()">💪 ¡Comenzar práctica!</button>
+    <button class="abtn out" onclick="showS('sHist')">📊 Ver historial</button>
+</div>
+
+<!-- ══ VOICE SCREEN ══ -->
+<div class="screen voice-screen" id="sVoice">
+    <div class="vbar">
+        <button class="vbar-back" onclick="if(confirm('¿Salir?')){stopAll();showS('s0')}">←</button>
+        <div class="vbar-info"><h3 id="vTitle">Práctica</h3><span id="vSub">1° Grado</span></div>
+        <div class="vscore"><span class="vscl">✅/❌</span><span class="vsc" id="vsc">0</span>/<span class="vsw"
+                                                                                                   id="vsw">0</span>
+        </div>
+    </div>
+    <div class="vprog">
+        <div class="vbar2">
+            <div class="vfill" id="vfill" style="width:0%"></div>
+        </div>
+        <div class="vplbl"><span id="vptxt">Pregunta 1</span><span id="vppct">0%</span></div>
+    </div>
+    <div class="owl-zone">
+        <div class="owl-wrap" id="owlWrap">
+            <span class="owl-emoji">🦉</span>
+            <div class="waves" id="wavesEl">
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+            </div>
+        </div>
+        <div class="vstatus" id="vstatus">Cargando...</div>
+    </div>
+    <div id="vContent">
+        <div class="vloading">
+            <div class="ldots">
+                <div class="ldot"></div>
+                <div class="ldot"></div>
+                <div class="ldot"></div>
+            </div>
+            <p>Generando pregunta...</p></div>
+    </div>
+</div>
+
+<!-- ══ REPORT ══ -->
+<div class="screen rep-screen" id="sRep">
+    <div class="rep-hero" id="repHero"></div>
+    <div style="padding:0 13px;font-size:.68rem;font-weight:800;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px">
+        Detalle
+    </div>
+    <div class="rep-list" id="repList"></div>
+    <div class="rep-btns">
+        <button class="abtn o" onclick="retrySession()">🔄 Repetir</button>
+        <button class="abtn g" onclick="showS('sHist')">📊 Historial</button>
+        <button class="abtn out" onclick="showS('s0')">🏠 Inicio</button>
+    </div>
+</div>
+
+<!-- ══ HISTORY ══ -->
+<div class="screen hist-screen" id="sHist">
+    <div class="hist-top"><h2>📊 Historial</h2>
+        <button class="del-btn" onclick="clearHist()">🗑 Borrar todo</button>
+    </div>
+    <div id="histContent"></div>
+    <div style="padding:0 13px 8px">
+        <button class="abtn out" onclick="showS('s0')">🏠 Inicio</button>
+    </div>
+</div>
+
+<script src="profebot.js"></script>
+</body>
+</html>
