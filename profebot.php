@@ -146,6 +146,7 @@ if (file_exists(__DIR__ . '/.env')) {
 // If UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN env vars are set,
 // uses Upstash Redis (REST API via Guzzle). Otherwise falls back to a local
 // JSON file (CACHE_FILE) for dev environments.
+// Backend is selected once per request via cache_backend() and memoized.
 define('CACHE_KEY_PREFIX', 'profebot:cache:');
 
 function cache_backend()
