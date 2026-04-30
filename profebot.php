@@ -362,8 +362,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fallbackCacheKey = isset($data['cache_key']) ? $data['cache_key'] : '';
     $fallbackExclude = isset($data['cache_exclude']) && is_array($data['cache_exclude']) ? $data['cache_exclude'] : [];
 
+    // Debug-only: simulate error scenarios without breaking real providers.
+    // Enable with env var PROFEBOT_DEBUG=1 + body JSON: {"_simulate":"ai_busy_no_cache"|"ai_busy_with_cache"}
+    $simulate = (getenv('PROFEBOT_DEBUG') === '1' && !empty($data['_simulate'])) ? $data['_simulate'] : '';
+
     // Limpiar campos de control del body antes de enviar al proveedor
-    unset($data['providers'], $data['provider_order'], $data['material_grade'], $data['material_subj'], $data['cache_key'], $data['cache_exclude']);
+    unset($data['providers'], $data['provider_order'], $data['material_grade'], $data['material_subj'], $data['cache_key'], $data['cache_exclude'], $data['_simulate']);
 
     // Fallback loop
     $errors = [];
@@ -372,6 +376,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     header('Content-Type: application/json');
     header('Access-Control-Allow-Origin: *');
+
+    if ($simulate === 'ai_busy_no_cache') {
+        pb_log_warn('Simulating ai_busy_no_cache (forcing empty cache fallback)');
+        $errors[] = 'simulated: all providers busy';
+        $fallbackCacheKey = '__simulate_no_match__'; // guarantees cache miss
+        goto cache_fallback;
+    }
+    if ($simulate === 'ai_busy_with_cache') {
+        pb_log_warn('Simulating ai_busy_with_cache (forcing cache fallback path)');
+        $errors[] = 'simulated: all providers busy';
+        goto cache_fallback;
+    }
 
     foreach ($resolved as $pid => $key) {
         $prov = $PROVIDERS[$pid];
@@ -440,6 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // All providers failed → last resort: cache (progressive widening search)
+    cache_fallback:
     pb_log_error('All providers failed', ['errors' => $errors, 'cache_key' => $fallbackCacheKey]);
 
     $cacheHit = null;
@@ -517,7 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode([
         'code' => 'AI_BUSY_NO_CACHE',
         'error' => 'El servicio de IA está ocupado y todavía no hay preguntas guardadas para este tema. Tocá Reintentar.',
-        'error_kid' => '¡Ups! Mi cerebro está pensando mucho. Tocá el botón de nuevo y probamos otra vez.',
+        'error_kid' => '¡Ay! Mi cerebro mágico está pensando muy fuerte. Vamos a tocar el botón grande y probamos otra vez juntos.',
     ]);
     exit;
 }
