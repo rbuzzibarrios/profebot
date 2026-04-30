@@ -808,7 +808,6 @@ async function callAPI(sys, userMsg, subjKey) {
 
 // ── PARSE ──
 function parseQ(txt) {
-    console.log('[parseQ] raw:', txt);
     // El modelo a veces envuelve la respuesta en bloques markdown o añade asteriscos
     txt = txt.replace(/```[a-z]*\n?/g, '').replace(/\*\*/g, '').trim();
     const qm = txt.match(/PREGUNTA:\s*(.+?)(?=\n[A-D]\))/is);
