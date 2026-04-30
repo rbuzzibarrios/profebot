@@ -1,13 +1,17 @@
 FROM php:8.2-cli
 
+# unzip + git needed by composer to extract packages (php:cli image has neither)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        unzip git \
+    && rm -rf /var/lib/apt/lists/*
+
 # Composer (multi-stage to keep final image small)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
 # Install PHP deps first (cacheable layer)
-COPY composer.json /app/
-COPY composer.lock* /app/
+COPY composer.json composer.lock /app/
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
 COPY profebot.php /app/
