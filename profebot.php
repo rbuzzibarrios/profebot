@@ -515,7 +515,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     pb_log_error('Cache fallback empty', ['cache_key' => $fallbackCacheKey]);
     http_response_code(502);
     echo json_encode([
-        'error' => 'El servicio de IA está saturado y aún no hay preguntas guardadas para este tema. Probá de nuevo en unos segundos.',
+        'code' => 'AI_BUSY_NO_CACHE',
+        'error' => 'El servicio de IA está ocupado y todavía no hay preguntas guardadas para este tema. Tocá Reintentar.',
+        'error_kid' => '¡Ups! Mi cerebro está pensando mucho. Tocá el botón de nuevo y probamos otra vez.',
     ]);
     exit;
 }
