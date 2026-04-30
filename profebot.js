@@ -186,7 +186,7 @@ function setProviderKeys(obj) {
     localStorage.setItem(PK, JSON.stringify(obj));
 }
 
-// Migrar key vieja (profebot_apikey) → estructura nueva
+// Migrate old key (profebot_apikey) → new structure
 function migrateOldKey() {
     const old = localStorage.getItem('profebot_apikey');
     if (!old) return;
@@ -584,7 +584,7 @@ function rmSrc(id) {
     if (el) el.remove();
 }
 
-// ── AUTO-LOAD DEFAULT MATERIALS (metadata only; contenido lo inyecta el backend) ──
+// ── AUTO-LOAD DEFAULT MATERIALS (metadata only; content injected by backend) ──
 async function loadDefaultMaterials() {
     let list = [];
     try {
@@ -674,7 +674,7 @@ function retrySession() {
 
 // ── API CALL (via local PHP proxy) ──
 function buildCtx(subjKey) {
-    // Defaults (server:true) los inyecta el backend; acá solo materiales subidos por el usuario
+    // Defaults (server:true) injected by backend; here only user-uploaded materials
     const ok = sources.filter(s => s.status === 'ok' && !s.server && s.content && (!s.subj || s.subj === subjKey) && (!s.grade || s.grade === _grade));
     if (!ok.length) return '';
     let c = '\n\n=== MATERIALES DE REFERENCIA ===\nUsá este contenido como guía para el nivel y estilo de las preguntas. Si el tema no aparece en el material, generá la pregunta igualmente basándote en el objetivo.\n\n';
@@ -819,7 +819,7 @@ async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude) {
 
 // ── PARSE ──
 function parseQ(txt) {
-    // El modelo a veces envuelve la respuesta en bloques markdown o añade asteriscos
+    // Model sometimes wraps response in markdown blocks or adds asterisks
     txt = txt.replace(/```[a-z]*\n?/g, '').replace(/\*\*/g, '').trim();
     const qm = txt.match(/PREGUNTA:\s*(.+?)(?=\n[A-D]\))/is);
     const am = txt.match(/^A\)\s*(.+)/im), bm = txt.match(/^B\)\s*(.+)/im);
