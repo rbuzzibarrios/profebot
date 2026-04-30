@@ -8,17 +8,36 @@ ProfeBot is a voice-interactive AI tutoring app for 1st-grade Cuban curriculum s
 
 ## Running Locally
 
+Always run with `router.php` as the second arg — it handles `/`, blocks private paths, and serves static assets. Without it, the root URL returns 404.
+
 ```bash
-# Option 1: API keys via environment variables
+# Option 1: API keys via environment variables (bash / git bash)
 export GROQ_API_KEY=gsk_...
 export GEMINI_API_KEY=AIza...
-php -S localhost:8080
+php -S localhost:8080 router.php
 
 # Option 2: Enter API keys in the UI provider config at runtime
-php -S localhost:8080
+php -S localhost:8080 router.php
 ```
 
-Open `http://localhost:8080/profebot.php` in browser.
+PowerShell equivalent for env vars:
+```powershell
+$env:GROQ_API_KEY="gsk_..."; $env:GEMINI_API_KEY="AIza..."; php -S localhost:8080 router.php
+```
+
+Open `http://localhost:8080/` in browser.
+
+### Debug simulation (force error UI)
+
+Set `PROFEBOT_DEBUG=1` in the server env, then in the browser DevTools console:
+
+```js
+window.__pb_simulate = 'ai_busy_no_cache'   // forces 502 + friendly warning UI
+window.__pb_simulate = 'ai_busy_with_cache' // forces cache fallback path
+window.__pb_simulate = null                  // disable
+```
+
+Bash one-liner: `PROFEBOT_DEBUG=1 php -S localhost:8080 router.php`. The flag is ignored unless that env var is set, so it's safe to leave the JS hook in place.
 
 Requirements: PHP 7.0+ with cURL extension, modern browser with Web Speech API support.
 

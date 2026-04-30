@@ -786,19 +786,22 @@ async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude) {
     const order = PROV_ORDER.filter(p => !!keys[p]);
     // If no local keys, send default order (backend will use env vars)
     const sendOrder = order.length ? order : PROV_ORDER;
+    const body = {
+        system: sys,
+        messages: [{ role: 'user', content: userMsg }],
+        providers: keys,
+        provider_order: sendOrder,
+        material_grade: _grade,
+        material_subj: subjKey || '',
+        cache_key: cacheKey || '',
+        cache_exclude: cacheExclude || []
+    };
+    // Debug: window.__pb_simulate = 'ai_busy_no_cache' | 'ai_busy_with_cache' (requires PROFEBOT_DEBUG=1 on server)
+    if (window.__pb_simulate) body._simulate = window.__pb_simulate;
     const r = await fetch('profebot.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            system: sys,
-            messages: [{ role: 'user', content: userMsg }],
-            providers: keys,
-            provider_order: sendOrder,
-            material_grade: _grade,
-            material_subj: subjKey || '',
-            cache_key: cacheKey || '',
-            cache_exclude: cacheExclude || []
-        })
+        body: JSON.stringify(body)
     });
     if (!r.ok) {
         const d = await r.json().catch(() => ({}));
@@ -917,14 +920,14 @@ async function loadQ() {
         renderQ(q);
         readQuestion(q);
     } catch (e) {
-        if (e.code === 'AI_BUSY_NO_CACHE') {
-            const kid = esc(e.kidMsg || '¡Ups! Mi cerebro está pensando mucho. Tocá el botón y probamos otra vez.');
-            const adult = esc(e.message);
-            document.getElementById('vContent').innerHTML = `<div class="qbubble" style="text-align:center"><div style="font-size:48px;margin-bottom:6px">🦉</div><div style="font-size:18px;font-weight:800;color:var(--ink);line-height:1.5">${kid}</div><div class="prov-warning" style="margin-top:12px">⚠️ Para adultos: ${adult}</div><button onclick="loadQ()" style="background:var(--orange);color:white;border:none;padding:11px 20px;border-radius:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:14px;width:100%;font-size:16px">🔄 Reintentar</button></div>`;
+        if (e.message === 'NO_KEY') {
+            document.getElementById('vContent').innerHTML = `<div style="padding:18px;text-align:center;color:var(--ink);font-weight:700;line-height:1.6">⚠️ Configurá tu API Key arriba antes de empezar.<br><button onclick="stopAll();showS('s0')" style="background:var(--orange);color:white;border:none;padding:9px 18px;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:10px;display:block;width:100%">Ir a configuración</button></div>`;
             return;
         }
-        const msg = e.message === 'NO_KEY' ? '⚠️ Configurá tu API Key arriba antes de empezar.' : '❌ Error: ' + e.message;
-        document.getElementById('vContent').innerHTML = `<div style="padding:18px;text-align:center;color:#f87171;font-weight:700;line-height:1.6">${msg}<br><button onclick="${e.message === 'NO_KEY' ? 'stopAll();showS(\'s0\')' : 'loadQ()'}" style="background:var(--orange);color:white;border:none;padding:9px 18px;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:10px;display:block;width:100%">${e.message === 'NO_KEY' ? 'Ir a configuración' : '🔄 Reintentar'}</button></div>`;
+        const kidMsg = e.kidMsg || '¡Ay! Mi cerebro mágico se cansó un poquito. Vamos a tocar el botón grande y probamos otra vez.';
+        const adultMsg = e.message || 'Servicio temporalmente no disponible.';
+        document.getElementById('vContent').innerHTML = `<div class="qbubble" style="text-align:center;background:#fff7e6;border:2px solid var(--orange)"><div style="font-size:56px;margin-bottom:8px">🦉</div><div style="font-size:20px;font-weight:800;color:var(--ink);line-height:1.5;padding:0 6px">${esc(kidMsg)}</div><button onclick="loadQ()" style="background:var(--orange);color:white;border:none;padding:14px 20px;border-radius:14px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:16px;width:100%;font-size:18px">🔄 Probar de nuevo</button><div style="margin-top:14px;padding:10px;background:#fff;border-radius:8px;font-size:12px;color:#666;line-height:1.4;text-align:left">⚠️ <b>Para adultos:</b> ${esc(adultMsg)}</div></div>`;
+        speak(kidMsg);
     }
 }
 
