@@ -2,3 +2,6 @@
 .claude/
 .env
 config.php
+.htaccess
+.idea/
+TODO.md
