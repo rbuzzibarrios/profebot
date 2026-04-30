@@ -29,6 +29,11 @@ jobs:
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Determine version
         id: ver
         env:
@@ -66,6 +71,20 @@ jobs:
           fi
           echo "new=$NEW" >> "$GITHUB_OUTPUT"
 
+      - name: Sync VERSION file on master
+        env:
+          NEW: ${{ steps.ver.outputs.new }}
+        run: |
+          set -euo pipefail
+          echo "$NEW" > VERSION
+          if git diff --quiet VERSION; then
+            echo "VERSION already $NEW"
+          else
+            git add VERSION
+            git commit -m "chore: bump VERSION to $NEW"
+            git push origin master
+          fi
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,6 +95,14 @@ jobs:
             --target master \
             --title "$NEW" \
             --generate-notes
+
+      - name: Sync develop
+        run: |
+          set -euo pipefail
+          git fetch origin develop
+          git checkout develop
+          git merge --no-ff master -m "Merge branch 'master' into develop"
+          git push origin develop
 
       - name: Delete merged head branch
         env:
