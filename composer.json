@@ -3,7 +3,8 @@
     "description": "ProfeBot — voice tutoring app",
     "require": {
         "php": ">=7.4",
-        "monolog/monolog": "^2.9"
+        "monolog/monolog": "^2.9",
+        "guzzlehttp/guzzle": "^7.8"
     },
     "config": {
         "optimize-autoloader": true
