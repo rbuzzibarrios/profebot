@@ -1147,6 +1147,17 @@
             },
             "correct": "B",
             "explanation": "La palabra periódicos termina con el sonido S."
+        },
+        {
+            "question": "¿Con qué sonido termina la palabra tomate?",
+            "opts": {
+                "A": "sonido O",
+                "B": "sonido E",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Tomate termina con el sonido E."
         }
     ],
     "preesc::len::0::3::fácil": [
@@ -1184,6 +1195,17 @@
             },
             "correct": "A",
             "explanation": "Plátano tiene el sonido L."
+        },
+        {
+            "question": "¿Cuál palabra tiene el sonido L?",
+            "opts": {
+                "A": "bola",
+                "B": "casa",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Bola tiene el sonido L."
         }
     ],
     "preesc::len::0::1::fácil": [
@@ -1247,6 +1269,17 @@
             },
             "correct": "A",
             "explanation": "La manzana es roja."
+        },
+        {
+            "question": "¿Cuál de estos juguetes es de color azul?",
+            "opts": {
+                "A": "Un carro azul",
+                "B": "Una pelota roja",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "El carro es de color azul."
         }
     ],
     "preesc::mat::0::1::fácil": [
@@ -1284,6 +1317,17 @@
             },
             "correct": "A",
             "explanation": "Un árbol es más alto que una flor."
+        },
+        {
+            "question": "¿Cuál de estas pelotas es la grande?",
+            "opts": {
+                "A": "La pelota grande",
+                "B": "La pelota pequeña",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Esa pelota es de tamaño grande."
         }
     ],
     "preesc::mat::0::3::fácil": [
@@ -1297,6 +1341,17 @@
             },
             "correct": "B",
             "explanation": "Manzanas, peras y plátanos son frutas."
+        },
+        {
+            "question": "Si te doy una manzana y una naranja, ¿qué tienen en común?",
+            "opts": {
+                "A": "son frutas",
+                "B": "son juguetes",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Las manzanas y las naranjas son frutas."
         }
     ],
     "preesc::mat::0::4::fácil": [
@@ -1321,6 +1376,17 @@
             },
             "correct": "B",
             "explanation": "El carro no es un animal."
+        },
+        {
+            "question": "Si tienes un sombrero, una gorra y un zapato, ¿cuál NO es para la cabeza?",
+            "opts": {
+                "A": "el zapato",
+                "B": "el sombrero",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "El zapato es para los pies."
         }
     ],
     "preesc::mat::1::0::fácil": [
@@ -1386,6 +1452,17 @@
             },
             "correct": "B",
             "explanation": "Tienes 3 dulces y tu amigo solo 1."
+        },
+        {
+            "question": "Tienes 4 dulces y tu amigo 2. ¿Quién tiene más?",
+            "opts": {
+                "A": "Tú",
+                "B": "Tu amigo",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "4 dulces son más que 2 dulces."
         }
     ],
     "preesc::mat::2::1::fácil": [
@@ -1451,6 +1528,444 @@
             },
             "correct": "A",
             "explanation": "Los árboles son muy altos."
+        }
+    ],
+    "1ro::mat::0::0::difícil": [
+        {
+            "question": "En tu aula, la ventana está a tu derecha. La puerta está al lado contrario de la ventana. ¿Dónde está la puerta?",
+            "opts": {
+                "A": "Al frente",
+                "B": "A tu derecha",
+                "C": "Detrás",
+                "D": "A tu izquierda"
+            },
+            "correct": "D",
+            "explanation": "Si la puerta está al lado contrario de la derecha, entonces está a la izquierda."
+        }
+    ],
+    "1ro::mat::0::1::difícil": [
+        {
+            "question": "Tu cinta roja es más larga que la azul. La verde no es la más corta. ¿Cuál es la cinta más corta?",
+            "opts": {
+                "A": "La roja",
+                "B": "La verde",
+                "C": "La azul",
+                "D": "Todas son iguales"
+            },
+            "correct": "C",
+            "explanation": "Si la roja es más larga que la azul y la verde no es la más corta, la azul es la más corta."
+        },
+        {
+            "question": "Rojo es más corto que azul. Verde es igual a azul. ¿Cuál lápiz es el más corto?",
+            "opts": {
+                "A": "Azul",
+                "B": "Rojo",
+                "C": "Verde",
+                "D": "No se puede saber"
+            },
+            "correct": "B",
+            "explanation": "El lápiz rojo es el más corto porque es más pequeño que el azul y el verde."
+        }
+    ],
+    "1ro::mat::0::2::difícil": [
+        {
+            "question": "Tengo 9 canicas. Regalo 4 a mi amigo y 3 a mi hermana. ¿Cuántas me quedan?",
+            "opts": {
+                "A": "7",
+                "B": "5",
+                "C": "2",
+                "D": "6"
+            },
+            "correct": "C",
+            "explanation": "Si de 9 canicas regalé 4 y 3, que son 7 en total, me quedan 2."
+        }
+    ],
+    "1ro::mat::0::3::difícil": [
+        {
+            "question": "Ana tiene 5 flores. Luis tiene 2 flores más que Ana. María tiene 1 flor menos que Luis. ¿Quién tiene menos flores?",
+            "opts": {
+                "A": "Luis",
+                "B": "María",
+                "C": "Ana",
+                "D": "Todos tienen la misma cantidad"
+            },
+            "correct": "C",
+            "explanation": "Ana tiene 5 flores, Luis tiene 7 flores y María tiene 6"
+        }
+    ],
+    "1ro::mat::1::0::difícil": [
+        {
+            "question": "Miguel tiene 5 juguetes. Su primo tiene 2 juguetes menos que Miguel. ¿Cuántos juguetes tiene el primo?",
+            "opts": {
+                "A": "2",
+                "B": "7",
+                "C": "3",
+                "D": "5"
+            },
+            "correct": "C",
+            "explanation": "Si Miguel tiene 5 juguetes y su primo tiene 2 menos, hay que restar 5 menos 2,"
+        }
+    ],
+    "preesc::mat::0::1::media": [
+        {
+            "question": "¿Qué cosa es redonda como una pelota?",
+            "opts": {
+                "A": "Un libro",
+                "B": "Un plato",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "El plato es redondo como una pelota."
+        }
+    ],
+    "preesc::mat::0::2::difícil": [
+        {
+            "question": "De un limón y una sandía, ¿cuál es la grande?",
+            "opts": {
+                "A": "El limón",
+                "B": "La sandía",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "La sandía es una fruta grande."
+        },
+        {
+            "question": "¿Cuál de estos es un juguete grande?",
+            "opts": {
+                "A": "un carro chiquito",
+                "B": "un oso enorme",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "El oso enorme es grande."
+        }
+    ],
+    "preesc::mat::0::4::media": [
+        {
+            "question": "Tenemos una pelota, un carro y una flor. ¿Cuál no es un juguete?",
+            "opts": {
+                "A": "La flor",
+                "B": "La pelota",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "La flor no es un juguete."
+        }
+    ],
+    "preesc::mat::1::0::difícil": [
+        {
+            "question": "Tengo un conjunto de juguetes: una pelota y un carro. ¿Qué falta que sea juguete?",
+            "opts": {
+                "A": "una piedra",
+                "B": "un muñeco",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Un muñeco es un juguete."
+        }
+    ],
+    "preesc::mat::1::3::difícil": [
+        {
+            "question": "Tienes 3 pelotas y 2 carros. Si los pones juntos, ¿qué tienes?",
+            "opts": {
+                "A": "Juguetes",
+                "B": "Pelotas",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Al juntar pelotas y carros, tienes juguetes."
+        }
+    ],
+    "preesc::mat::2::1::media": [
+        {
+            "question": "Tengo 3 dulces. ¿Cuál grupo tiene la misma cantidad?",
+            "opts": {
+                "A": "3 juguetes",
+                "B": "2 muñecas",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "3 dulces y 3 juguetes son la misma cantidad."
+        }
+    ],
+    "preesc::mat::2::2::difícil": [
+        {
+            "question": "¿Cuántos dedos tienes en una mano?",
+            "opts": {
+                "A": "cinco dedos",
+                "B": "tres dedos",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "En una mano tenemos cinco dedos."
+        }
+    ],
+    "preesc::mat::3::0::media": [
+        {
+            "question": "Tienes lápiz azul y rojo. El azul es más largo. ¿Cuál es el más corto?",
+            "opts": {
+                "A": "El lápiz rojo",
+                "B": "El lápiz azul",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Si el azul es más largo, el rojo es el más corto."
+        }
+    ],
+    "preesc::mat::3::1::difícil": [
+        {
+            "question": "El papá de Juan es alto. Juan es bajo. ¿Quién es el más bajo?",
+            "opts": {
+                "A": "El papá",
+                "B": "Juan",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Juan es el más bajo."
+        }
+    ],
+    "preesc::mat::3::2::fácil": [
+        {
+            "question": "Hay un lápiz corto, mediano y largo. ¿Cuál es el más largo?",
+            "opts": {
+                "A": "el largo",
+                "B": "el corto",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "El lápiz largo es el más grande."
+        }
+    ],
+    "preesc::mat::3::3::media": [
+        {
+            "question": "¿Qué usas para medir la alfombra?",
+            "opts": {
+                "A": "Un clip",
+                "B": "Tus pasos",
+                "C": "",
+                "D": ""
+            },
+            "correct": "B",
+            "explanation": "Tus pasos son mejores para medir la alfombra."
+        }
+    ],
+    "preesc::mat::4::0::difícil": [
+        {
+            "question": "Había 3 niños jugando y llegaron 2 más. ¿Cuántos hay?",
+            "opts": {
+                "A": "5 niños",
+                "B": "4 niños",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Tres más dos son cinco."
+        }
+    ],
+    "preesc::mat::4::1::fácil": [
+        {
+            "question": "Teníamos 5 juguetes. Regalamos 2. ¿Cuántos quedan?",
+            "opts": {
+                "A": "Tres juguetes",
+                "B": "Dos juguetes",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Si de 5 juguetes quitamos 2, quedan 3."
+        }
+    ],
+    "preesc::mat::4::2::media": [
+        {
+            "question": "En el frutero hay 4 manzanas y 1 plátano. Si sacas solo las manzanas, ¿cuántas sacaste?",
+            "opts": {
+                "A": "Cuatro",
+                "B": "Una",
+                "C": "",
+                "D": ""
+            },
+            "correct": "A",
+            "explanation": "Sacaste 4 manzanas del frutero."
+        }
+    ],
+    "1ro::mat::1::1::difícil": [
+        {
+            "question": "Tengo 4 libros. Regalo 1. ¿Cuántos libros me quedan?",
+            "opts": {
+                "A": "4",
+                "B": "3",
+                "C": "5",
+                "D": "2"
+            },
+            "correct": "B",
+            "explanation": "Si tienes 4 y regalas 1, te quedan 3."
+        }
+    ],
+    "1ro::mat::1::2::difícil": [
+        {
+            "question": "Yo tengo 3 muñecas. Mi amiga tiene 1 más. ¿Quién tiene menos muñecas?",
+            "opts": {
+                "A": "Mi amiga",
+                "B": "Las dos igual",
+                "C": "Yo",
+                "D": "No se puede saber"
+            },
+            "correct": "C",
+            "explanation": "Yo tengo 3 muñecas y mi amiga tiene 4, entonces yo tengo menos."
+        }
+    ],
+    "1ro::mat::1::3::difícil": [
+        {
+            "question": "Lola tiene 4 gomas. Pepe tiene 1 goma menos que Lola. Sofía tiene 2 gomas. ¿Quién tiene menos?",
+            "opts": {
+                "A": "Lola",
+                "B": "Pepe",
+                "C": "Sofía",
+                "D": "Todos tienen la misma cantidad"
+            },
+            "correct": "C",
+            "explanation": "Sofía tiene 2 gomas, que es la menor cantidad."
+        }
+    ],
+    "1ro::mat::1::4::difícil": [
+        {
+            "question": "Ana dibuja un rayo numérico hasta el 7. ¿Cuál es el correcto?",
+            "opts": {
+                "A": "0, 1, 2, 3, 5, 6, 7",
+                "B": "1, 2, 3, 4, 5, 6, 7",
+                "C": "0, 1, 2, 3, 4, 5, 6, 7",
+                "D": "0, 1, 2, 3, 4, 5, 7"
+            },
+            "correct": "C",
+            "explanation": "Es el único que tiene todos los números en orden desde 0 hasta 7."
+        }
+    ],
+    "1ro::mat::1::5::difícil": [
+        {
+            "question": "Hay 5 niños en fila. El 2do niño tiene gorra. ¿Qué lugar tiene el niño antes del 2do?",
+            "opts": {
+                "A": "1ro",
+                "B": "2do",
+                "C": "3ro",
+                "D": "4to"
+            },
+            "correct": "A",
+            "explanation": "El niño que está antes del segundo es el primero."
+        }
+    ],
+    "1ro::mat::2::0::difícil": [
+        {
+            "question": "En el parque hay 1 columpio. Llegan 3 niños y 2 niñas. ¿Cuántos niños y niñas hay en total?",
+            "opts": {
+                "A": "4",
+                "B": "6",
+                "C": "1",
+                "D": "5"
+            },
+            "correct": "D",
+            "explanation": "Para saber el total de niños y niñas, sumamos 3 más"
+        }
+    ],
+    "1ro::len::3::3::fácil": [
+        {
+            "question": "¿Cuál palabra tiene dos partes (sílabas) al decirla?",
+            "opts": {
+                "A": "Sol",
+                "B": "Mariposa",
+                "C": "Sopa",
+                "D": "Pan"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"sopa\" tiene dos partes: so-pa."
+        }
+    ],
+    "1ro::len::2::7::media": [
+        {
+            "question": "¿Qué palabra tiene el mismo sonido que la \"x\" de \"examen\"?",
+            "opts": {
+                "A": "Sapo",
+                "B": "Taxi",
+                "C": "Luna",
+                "D": "Reloj"
+            },
+            "correct": "B",
+            "explanation": "En la palabra \"taxi\", la \"x\" suena igual que en \"examen\"."
+        }
+    ],
+    "1ro::len::1::8::difícil": [
+        {
+            "question": "¿Qué palabra empieza con el sonido de la \"L\" de \"luna\"?",
+            "opts": {
+                "A": "Pato",
+                "B": "Mono",
+                "C": "Loro",
+                "D": "Rosa"
+            },
+            "correct": "C",
+            "explanation": "\"Loro\" empieza con el sonido \"L\", como \"luna\"."
+        }
+    ],
+    "1ro::len::1::5::fácil": [
+        {
+            "question": "¿Qué palabra empieza con el sonido de la letra N?",
+            "opts": {
+                "A": "Pato",
+                "B": "Ropa",
+                "C": "Naranja",
+                "D": "Mano"
+            },
+            "correct": "C",
+            "explanation": "La palabra naranja empieza con el sonido N."
+        }
+    ],
+    "1ro::len::2::5::media": [
+        {
+            "question": "¿Cuál de estas palabras lleva el sonido de la letra J?",
+            "opts": {
+                "A": "goma",
+                "B": "casa",
+                "C": "jabón",
+                "D": "leche"
+            },
+            "correct": "C",
+            "explanation": "La palabra jabón lleva el sonido de la letra J."
+        }
+    ],
+    "1ro::len::2::5::fácil": [
+        {
+            "question": "¿Cuál de estas palabras tiene el sonido de la letra J?",
+            "opts": {
+                "A": "Gato",
+                "B": "Perro",
+                "C": "Juguete",
+                "D": "Casa"
+            },
+            "correct": "C",
+            "explanation": "La palabra \"Juguete\" tiene el sonido de la letra J al principio."
+        }
+    ],
+    "1ro::len::2::4::media": [
+        {
+            "question": "¿Qué palabra lleva la \"u\" con dos punticos para que suene?",
+            "opts": {
+                "A": "Guerra",
+                "B": "Cigüeña",
+                "C": "Guitarra",
+                "D": "Juguete"
+            },
+            "correct": "B",
+            "explanation": "En 'cigüeña', los dos punticos (diéresis) hacen que la \"u\" se escuche."
         }
     ]
 }

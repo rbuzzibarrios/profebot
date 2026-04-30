@@ -1,0 +1,11 @@
+{
+    "name": "profebot/profebot",
+    "description": "ProfeBot — voice tutoring app",
+    "require": {
+        "php": ">=7.4",
+        "monolog/monolog": "^2.9"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

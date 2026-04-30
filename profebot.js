@@ -170,6 +170,7 @@ const PROV_META = {
     groq: { label: 'Groq', prefix: 'gsk_', order: 2 },
 };
 const PROV_ORDER = Object.keys(PROV_META);
+const PROV_LABELS = { cache: 'Caché', cache_fallback: 'Caché (AI saturada)' };
 
 function getProviderKeys() {
     try {
@@ -780,7 +781,7 @@ function getUMsg(obj, n, tot, prev) {
 
 let lastProvider = '';
 
-async function callAPI(sys, userMsg, subjKey) {
+async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude) {
     const keys = getProviderKeys();
     const order = PROV_ORDER.filter(p => !!keys[p]);
     // Si no hay keys locales, enviar orden default (backend usará env vars)
@@ -794,7 +795,9 @@ async function callAPI(sys, userMsg, subjKey) {
             providers: keys,
             provider_order: sendOrder,
             material_grade: _grade,
-            material_subj: subjKey || ''
+            material_subj: subjKey || '',
+            cache_key: cacheKey || '',
+            cache_exclude: cacheExclude || []
         })
     });
     if (!r.ok) {
@@ -875,16 +878,31 @@ async function loadQ() {
         }
 
         // Cache miss → call AI
+        let fallbackWarning = '';
+        let fallbackWarningKid = '';
         if (!q) {
             for (let attempt = 0; attempt < 3 && !q; attempt++) {
-                const d = await callAPI(getSys(obj), getUMsg(obj, sessIdx + 1, battCnt, sessAsked), obj.subjKey);
+                const d = await callAPI(getSys(obj), getUMsg(obj, sessIdx + 1, battCnt, sessAsked), obj.subjKey, cacheKey, sessAsked);
+                // Backend devolvió pregunta del caché (todos los proveedores fallaron)
+                if (d.cached && d.question) {
+                    q = d.question;
+                    fallbackWarning = d.warning || '';
+                    fallbackWarningKid = d.warning_kid || '';
+                    break;
+                }
                 const txt = d.content?.[0]?.text || '';
                 q = parseQ(txt);
                 if (!q) console.warn('parseQ retry', attempt + 1, 'on:', txt);
             }
             if (!q) throw new Error('parse');
-            // Save to cache in background
-            saveToCacheBackground(cacheKey, q);
+            // Save to cache in background (sólo si vino de AI, no si fue fallback)
+            if (lastProvider !== 'cache_fallback') {
+                saveToCacheBackground(cacheKey, q);
+            }
+        }
+        if (fallbackWarning) {
+            q.warning = fallbackWarning;
+            q.warningKid = fallbackWarningKid;
         }
         q.objText = obj.obj;
         q.subjLabel = obj.subj;
@@ -904,7 +922,7 @@ async function loadQ() {
 function renderQ(q) {
     const letters = ['A', 'B', 'C', 'D'].filter(l => q.opts[l]);
     document.getElementById('vContent').innerHTML = `
-    <div class="qbubble"><div class="qobj">${esc(q.objText)}</div><br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || lastProvider) + '</div>' : ''}</div>
+    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div><br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para adultos: ' + esc(q.warning) + '</div>' : ''}</div>
     <div class="opts">${letters.map(l => `<button class="opt" data-l="${l}" onclick="chooseAns('${l}')" id="opt${l}"><span class="oltr">${l}</span><span>${esc(q.opts[l])}</span></button>`).join('')}</div>
     <div class="vfeedback" id="vfb"></div>
     <div class="vexpl" id="vex"></div>
@@ -919,6 +937,11 @@ function renderQ(q) {
 
 function readQuestion(q) {
     if (!q) return;
+    if (q.warningKid && !q._warningSpoken) {
+        q._warningSpoken = true;
+        speak(q.warningKid, () => speak(`Pregunta ${sessIdx + 1}. ${q.question}`, () => readOptions(q)));
+        return;
+    }
     speak(`Pregunta ${sessIdx + 1}. ${q.question}`, () => readOptions(q));
 }
 

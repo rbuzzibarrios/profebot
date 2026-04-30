@@ -5,9 +5,61 @@
 //  Abrir: http://localhost:8080/profebot.php
 // ═══════════════════════════════════════════════════════
 
+// Autoloader (Monolog para logs). vendor/ se genera con `composer install`.
+@require_once __DIR__.'/vendor/autoload.php';
+
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
 // ── CACHE DE PREGUNTAS ──
 define('CACHE_FILE', __DIR__.'/question_cache.json');
 define('CACHE_MAX_PER_KEY', 50);
+
+// ── LOGGER ──
+function pb_log()
+{
+    static $logger = null;
+    if ($logger !== null) {
+        return $logger;
+    }
+    if (!class_exists('Monolog\\Logger')) {
+        $logger = false; // marcador: sin Monolog
+        return $logger;
+    }
+    $logger = new Logger('profebot');
+    $logger->pushHandler(new StreamHandler('php://stderr', Logger::DEBUG));
+    return $logger;
+}
+
+function pb_log_warn($msg, array $ctx = [])
+{
+    $l = pb_log();
+    if ($l) {
+        $l->warning($msg, $ctx);
+    } else {
+        error_log('[WARN] '.$msg.' '.json_encode($ctx, JSON_UNESCAPED_UNICODE));
+    }
+}
+
+function pb_log_error($msg, array $ctx = [])
+{
+    $l = pb_log();
+    if ($l) {
+        $l->error($msg, $ctx);
+    } else {
+        error_log('[ERROR] '.$msg.' '.json_encode($ctx, JSON_UNESCAPED_UNICODE));
+    }
+}
+
+function pb_log_info($msg, array $ctx = [])
+{
+    $l = pb_log();
+    if ($l) {
+        $l->info($msg, $ctx);
+    } else {
+        error_log('[INFO] '.$msg.' '.json_encode($ctx, JSON_UNESCAPED_UNICODE));
+    }
+}
 
 // ── MATERIALES (lectura server-side; nunca expuestos por HTTP) ──
 define('MATERIALS_DIR', __DIR__.'/materiales');
@@ -306,8 +358,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Capturar info de fallback caché antes de limpiar
+    $fallbackCacheKey = isset($data['cache_key']) ? $data['cache_key'] : '';
+    $fallbackExclude = isset($data['cache_exclude']) && is_array($data['cache_exclude']) ? $data['cache_exclude'] : [];
+
     // Limpiar campos de control del body antes de enviar al proveedor
-    unset($data['providers'], $data['provider_order'], $data['material_grade'], $data['material_subj']);
+    unset($data['providers'], $data['provider_order'], $data['material_grade'], $data['material_subj'], $data['cache_key'], $data['cache_exclude']);
 
     // Fallback loop
     $errors = [];
@@ -340,6 +396,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Error cURL → fallback
         if ($curlErr) {
             $errors[] = "$pid: red – $curlErr";
+            pb_log_warn('Provider network error', ['provider' => $pid, 'curl_error' => $curlErr]);
             continue;
         }
 
@@ -348,11 +405,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $parsed = $prov['parse']($response);
             $msg = $parsed['error'] ?: "HTTP $httpCode";
             if (in_array($httpCode, $STOP_CODES)) {
+                pb_log_error('Provider config error (stop)', [
+                    'provider' => $pid,
+                    'http_code' => $httpCode,
+                    'message' => $msg,
+                    'raw' => substr((string)$response, 0, 1000),
+                ]);
                 http_response_code($httpCode);
                 echo json_encode(['error' => "$pid: $msg", 'provider' => $pid]);
                 exit;
             }
             $errors[] = "$pid: $msg";
+            pb_log_warn('Provider HTTP error (fallback)', [
+                'provider' => $pid,
+                'http_code' => $httpCode,
+                'message' => $msg,
+                'raw' => substr((string)$response, 0, 1000),
+            ]);
             continue; // fallback
         }
 
@@ -367,11 +436,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $errors[] = "$pid: respuesta vacía";
+        pb_log_warn('Provider empty response', ['provider' => $pid]);
     }
 
-    // Todos fallaron
+    // Todos los proveedores fallaron → último recurso: caché (búsqueda progresiva)
+    pb_log_error('All providers failed', ['errors' => $errors, 'cache_key' => $fallbackCacheKey]);
+
+    $cacheHit = null;
+    $cacheMatchType = '';
+    if ($fallbackCacheKey) {
+        $cache = cache_read();
+        $excludeFn = function ($q) use ($fallbackExclude) {
+            return !in_array($q['question'], $fallbackExclude);
+        };
+
+        // 1) Match exacto
+        if (isset($cache[$fallbackCacheKey])) {
+            $pool = array_values(array_filter($cache[$fallbackCacheKey], $excludeFn));
+            if (!empty($pool)) {
+                $cacheHit = $pool[array_rand($pool)];
+                $cacheMatchType = 'exact';
+            }
+        }
+
+        // 2) Widening: misma grade::subj::idx (cualquier dificultad)
+        if (!$cacheHit) {
+            $parts = explode('::', $fallbackCacheKey);
+            // últimas dos partes son idx::dificultad → quitar dificultad
+            if (count($parts) >= 2) {
+                $prefixWithoutDiff = implode('::', array_slice($parts, 0, count($parts) - 1));
+                $pool = [];
+                foreach ($cache as $k => $items) {
+                    if (strpos($k, $prefixWithoutDiff.'::') === 0) {
+                        $pool = array_merge($pool, array_filter($items, $excludeFn));
+                    }
+                }
+                $pool = array_values($pool);
+                if (!empty($pool)) {
+                    $cacheHit = $pool[array_rand($pool)];
+                    $cacheMatchType = 'same_objective';
+                }
+            }
+        }
+
+        // 3) Widening: misma grade::subj (cualquier objetivo y dificultad)
+        if (!$cacheHit) {
+            $parts = explode('::', $fallbackCacheKey);
+            // grade::subj suele ser primeras 2 (formato 1ro::mat::0::fácil) o solo primera (mat::0::0::fácil legacy)
+            $prefixSubj = count($parts) >= 4 ? $parts[0].'::'.$parts[1] : $parts[0];
+            $pool = [];
+            foreach ($cache as $k => $items) {
+                if (strpos($k, $prefixSubj.'::') === 0) {
+                    $pool = array_merge($pool, array_filter($items, $excludeFn));
+                }
+            }
+            $pool = array_values($pool);
+            if (!empty($pool)) {
+                $cacheHit = $pool[array_rand($pool)];
+                $cacheMatchType = 'same_subject';
+            }
+        }
+    }
+
+    if ($cacheHit) {
+        pb_log_info('Cache fallback served', ['cache_key' => $fallbackCacheKey, 'match' => $cacheMatchType]);
+        $warningKid = '¡Hoy juego con preguntas guardadas! Mi cerebro mágico está descansando.';
+        $warning = 'El servicio de IA está saturado. Usando una pregunta del caché ('.$cacheMatchType.').';
+        echo json_encode([
+            'cached' => true,
+            'question' => $cacheHit,
+            'provider' => 'cache_fallback',
+            'warning' => $warning,
+            'warning_kid' => $warningKid,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    pb_log_error('Cache fallback empty', ['cache_key' => $fallbackCacheKey]);
     http_response_code(502);
-    echo json_encode(['error' => 'Todos los proveedores fallaron: '.implode(' | ', $errors)]);
+    echo json_encode([
+        'error' => 'El servicio de IA está saturado y aún no hay preguntas guardadas para este tema. Probá de nuevo en unos segundos.',
+    ]);
     exit;
 }
 

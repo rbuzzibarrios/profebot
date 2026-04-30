@@ -5,3 +5,4 @@ config.php
 .htaccess
 .idea/
 TODO.md
+vendor/
