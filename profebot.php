@@ -142,7 +142,95 @@ if (file_exists(__DIR__ . '/.env')) {
 // Load config.php if present (InfinityFree or other hosting without env vars)
 @include __DIR__ . '/config.php';
 
-function cache_read()
+// ── CACHE BACKEND ──
+// If UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN env vars are set,
+// uses Upstash Redis (REST API via Guzzle). Otherwise falls back to a local
+// JSON file (CACHE_FILE) for dev environments.
+define('CACHE_KEY_PREFIX', 'profebot:cache:');
+
+function cache_backend()
+{
+    static $backend = null;
+    if ($backend !== null) {
+        return $backend;
+    }
+    $url = getenv('UPSTASH_REDIS_REST_URL');
+    $token = getenv('UPSTASH_REDIS_REST_TOKEN');
+    if ($url && $token && class_exists('GuzzleHttp\\Client')) {
+        $backend = 'upstash';
+    } else {
+        $backend = 'file';
+    }
+    return $backend;
+}
+
+function upstash_client()
+{
+    static $client = null;
+    if ($client !== null) {
+        return $client;
+    }
+    $client = new GuzzleHttp\Client([
+        'base_uri'        => rtrim(getenv('UPSTASH_REDIS_REST_URL'), '/').'/',
+        'headers'         => [
+            'Authorization' => 'Bearer '.getenv('UPSTASH_REDIS_REST_TOKEN'),
+            'Content-Type'  => 'application/json',
+        ],
+        'timeout'         => 5.0,
+        'connect_timeout' => 3.0,
+        'http_errors'     => false,
+    ]);
+    return $client;
+}
+
+function upstash_cmd(array $command)
+{
+    try {
+        $resp = upstash_client()->post('', ['json' => $command]);
+        if ($resp->getStatusCode() >= 400) {
+            pb_log_warn('Upstash HTTP error', [
+                'status' => $resp->getStatusCode(),
+                'cmd'    => $command[0] ?? '?',
+                'body'   => substr((string)$resp->getBody(), 0, 300),
+            ]);
+            return null;
+        }
+        $body = json_decode((string)$resp->getBody(), true);
+        return isset($body['result']) ? $body['result'] : null;
+    } catch (\Throwable $e) {
+        pb_log_warn('Upstash command failed', ['error' => $e->getMessage(), 'cmd' => $command[0] ?? '?']);
+        return null;
+    }
+}
+
+function upstash_pipeline(array $commands)
+{
+    if (empty($commands)) {
+        return [];
+    }
+    try {
+        $resp = upstash_client()->post('pipeline', ['json' => $commands]);
+        if ($resp->getStatusCode() >= 400) {
+            pb_log_warn('Upstash pipeline HTTP error', [
+                'status' => $resp->getStatusCode(),
+                'body'   => substr((string)$resp->getBody(), 0, 300),
+            ]);
+            return [];
+        }
+        $body = json_decode((string)$resp->getBody(), true);
+        if (!is_array($body)) {
+            return [];
+        }
+        return array_map(function ($r) {
+            return isset($r['result']) ? $r['result'] : null;
+        }, $body);
+    } catch (\Throwable $e) {
+        pb_log_warn('Upstash pipeline failed', ['error' => $e->getMessage()]);
+        return [];
+    }
+}
+
+function cache_read_file()
 {
     if (!file_exists(CACHE_FILE)) {
         return [];
@@ -155,7 +243,7 @@ function cache_read()
     return is_array($data) ? $data : [];
 }
 
-function cache_write($data)
+function cache_write_file($data)
 {
     $f = fopen(CACHE_FILE, 'c+');
     if (!$f) {
@@ -171,6 +259,84 @@ function cache_write($data)
     return true;
 }
 
+function cache_get_key($key)
+{
+    if (cache_backend() === 'upstash') {
+        $val = upstash_cmd(['GET', CACHE_KEY_PREFIX.$key]);
+        if (!is_string($val)) {
+            return [];
+        }
+        $decoded = json_decode($val, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+    $cache = cache_read_file();
+    return isset($cache[$key]) ? $cache[$key] : [];
+}
+
+function cache_set_key($key, array $items)
+{
+    if (cache_backend() === 'upstash') {
+        $val = json_encode($items, JSON_UNESCAPED_UNICODE);
+        $res = upstash_cmd(['SET', CACHE_KEY_PREFIX.$key, $val]);
+        return $res === 'OK';
+    }
+    $cache = cache_read_file();
+    $cache[$key] = $items;
+    return cache_write_file($cache);
+}
+
+// Returns [key => items[]] for cache keys starting with the given prefix.
+// Used by the all-providers-failed fallback path for progressive widening.
+function cache_scan_prefix($prefix)
+{
+    if (cache_backend() === 'upstash') {
+        $pattern = CACHE_KEY_PREFIX.$prefix.'*';
+        $cursor = '0';
+        $keys = [];
+        $iterations = 0;
+        do {
+            $res = upstash_cmd(['SCAN', $cursor, 'MATCH', $pattern, 'COUNT', '100']);
+            if (!is_array($res) || count($res) < 2) {
+                break;
+            }
+            $cursor = (string)$res[0];
+            if (is_array($res[1])) {
+                $keys = array_merge($keys, $res[1]);
+            }
+            $iterations++;
+        } while ($cursor !== '0' && $iterations < 10 && count($keys) < 500);
+
+        if (empty($keys)) {
+            return [];
+        }
+        $cmds = array_map(function ($k) {
+            return ['GET', $k];
+        }, $keys);
+        $values = upstash_pipeline($cmds);
+        $out = [];
+        foreach ($keys as $i => $fullKey) {
+            $shortKey = substr($fullKey, strlen(CACHE_KEY_PREFIX));
+            $val = isset($values[$i]) ? $values[$i] : null;
+            if (!is_string($val)) {
+                continue;
+            }
+            $decoded = json_decode($val, true);
+            if (is_array($decoded)) {
+                $out[$shortKey] = $decoded;
+            }
+        }
+        return $out;
+    }
+    $cache = cache_read_file();
+    $out = [];
+    foreach ($cache as $k => $items) {
+        if (strpos($k, $prefix) === 0) {
+            $out[$k] = $items;
+        }
+    }
+    return $out;
+}
+
 // ── API PROXY: multi-provider with automatic fallback ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $raw = file_get_contents('php://input');
@@ -184,8 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($data['action'] === 'cache_get') {
             $key = isset($data['cache_key']) ? $data['cache_key'] : '';
             $exclude = isset($data['exclude']) ? $data['exclude'] : [];
-            $cache = cache_read();
-            $items = isset($cache[$key]) ? $cache[$key] : [];
+            $items = cache_get_key($key);
             // Filter out already-asked questions
             $available = array_values(array_filter($items, function ($q) use ($exclude) {
                 return !in_array($q['question'], $exclude);
@@ -223,17 +388,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['saved' => false, 'error' => 'missing data']);
                 exit;
             }
-            $cache = cache_read();
-            if (!isset($cache[$key])) {
-                $cache[$key] = [];
-            }
-            $cache[$key][] = $question;
+            $items = cache_get_key($key);
+            $items[] = $question;
             // FIFO: keep max per key
-            if (count($cache[$key]) > CACHE_MAX_PER_KEY) {
-                $cache[$key] = array_slice($cache[$key], -CACHE_MAX_PER_KEY);
+            if (count($items) > CACHE_MAX_PER_KEY) {
+                $items = array_slice($items, -CACHE_MAX_PER_KEY);
             }
-            cache_write($cache);
-            echo json_encode(['saved' => true]);
+            $ok = cache_set_key($key, $items);
+            echo json_encode(['saved' => $ok]);
             exit;
         }
     }
@@ -480,14 +642,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cacheHit = null;
     $cacheMatchType = '';
     if ($fallbackCacheKey) {
-        $cache = cache_read();
         $excludeFn = function ($q) use ($fallbackExclude) {
             return !in_array($q['question'], $fallbackExclude);
         };
 
         // 1) Exact cache_key match
-        if (isset($cache[$fallbackCacheKey])) {
-            $pool = array_values(array_filter($cache[$fallbackCacheKey], $excludeFn));
+        $exactItems = cache_get_key($fallbackCacheKey);
+        if (!empty($exactItems)) {
+            $pool = array_values(array_filter($exactItems, $excludeFn));
             if (!empty($pool)) {
                 $cacheHit = $pool[array_rand($pool)];
                 $cacheMatchType = 'exact';
@@ -497,14 +659,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 2) Widening: same grade::subj::idx (any difficulty)
         if (!$cacheHit) {
             $parts = explode('::', $fallbackCacheKey);
-            // Last two parts are idx::difficulty → drop difficulty
+            // Last component is difficulty → drop it
             if (count($parts) >= 2) {
-                $prefixWithoutDiff = implode('::', array_slice($parts, 0, count($parts) - 1));
+                $prefixWithoutDiff = implode('::', array_slice($parts, 0, count($parts) - 1)).'::';
+                $matches = cache_scan_prefix($prefixWithoutDiff);
                 $pool = [];
-                foreach ($cache as $k => $items) {
-                    if (strpos($k, $prefixWithoutDiff.'::') === 0) {
-                        $pool = array_merge($pool, array_filter($items, $excludeFn));
-                    }
+                foreach ($matches as $items) {
+                    $pool = array_merge($pool, array_filter($items, $excludeFn));
                 }
                 $pool = array_values($pool);
                 if (!empty($pool)) {
@@ -517,13 +678,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 3) Widening: same grade::subj (any objective and difficulty)
         if (!$cacheHit) {
             $parts = explode('::', $fallbackCacheKey);
-            // grade::subj is usually the first 2 parts (format 1ro::mat::0::fácil) or just the first (mat::0::0::fácil legacy)
-            $prefixSubj = count($parts) >= 4 ? $parts[0].'::'.$parts[1] : $parts[0];
+            // grade::subj is the first 2 parts in current format (1ro::mat::U::O::diff) or just the first in legacy (mat::U::O::diff)
+            $prefixSubj = (count($parts) >= 4 ? $parts[0].'::'.$parts[1] : $parts[0]).'::';
+            $matches = cache_scan_prefix($prefixSubj);
             $pool = [];
-            foreach ($cache as $k => $items) {
-                if (strpos($k, $prefixSubj.'::') === 0) {
-                    $pool = array_merge($pool, array_filter($items, $excludeFn));
-                }
+            foreach ($matches as $items) {
+                $pool = array_merge($pool, array_filter($items, $excludeFn));
             }
             $pool = array_values($pool);
             if (!empty($pool)) {

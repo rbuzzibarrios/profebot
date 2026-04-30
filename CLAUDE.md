@@ -102,10 +102,27 @@ EXPLICACION: ...
 - `localStorage.profebot_providers` — Provider API keys `{groq:"...", gemini:"..."}`
 - `localStorage.profebot_hist_v3` — Session history (max 60 sessions)
 
+### Question cache backend
+
+Two backends, picked at runtime in `cache_backend()`:
+
+1. **Upstash Redis** (production) — used when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` env vars are set. Persistent across deploys/restarts. Schema: `profebot:cache:{cacheKey}` → JSON array of questions (max 50 per key, FIFO). Widening fallback uses `SCAN` + pipelined `GET`.
+2. **Local JSON file** (`question_cache.json`) — used otherwise. Render free filesystem is ephemeral, so the file is only useful for dev.
+
+API surface (`profebot.php`):
+
+- `cache_get_key($key)` → `array`
+- `cache_set_key($key, $items)` → `bool`
+- `cache_scan_prefix($prefix)` → `[key => items[]]` (used by progressive widening when all providers fail)
+
+HTTP client: Guzzle 7 (declared in `composer.json`).
+
 ## External Dependencies
 
 - Groq API (`llama-3.3-70b-versatile` model) — primary provider
 - Gemini API (`gemini-2.5-flash` model) — fallback provider
+- Upstash Redis (REST API) — persistent question cache (optional, env-gated)
+- Guzzle HTTP 7 — HTTP client for Upstash REST calls
 - pdf.js v3.11.174 (CDN) — PDF text extraction, limited to 12,000 chars
 - All Origins API — web content proxy for URL materials, limited to 12,000 chars
 - Google Fonts (CDN)
