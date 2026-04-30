@@ -1,0 +1,85 @@
+name: Auto-release on merge to master
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >
+      github.event.pull_request.merged == true &&
+      (startsWith(github.event.pull_request.head.ref, 'release/') ||
+       startsWith(github.event.pull_request.head.ref, 'hotfix/'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine version
+        id: ver
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          NEW=""
+          # Try extract vX.Y.Z from branch name (release/v1.2.5, hotfix/v1.2.6, hotfix/v1.2.6-foo)
+          if [[ "$HEAD_REF" =~ v([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            NEW="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+            echo "Version extracted from branch: $NEW"
+          else
+            # Auto-bump patch from latest tag (hotfix/foo without version)
+            LATEST=$(git tag -l 'v*.*.*' --sort=-v:refname | head -n1)
+            if [[ -z "$LATEST" ]]; then
+              LATEST="v0.0.0"
+              echo "No prior tags, seeding v0.0.0"
+            fi
+            if [[ "$LATEST" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              X=${BASH_REMATCH[1]}
+              Y=${BASH_REMATCH[2]}
+              Z=${BASH_REMATCH[3]}
+              NEW="v$X.$Y.$((Z+1))"
+              echo "Auto-bumped patch from $LATEST → $NEW"
+            else
+              echo "Latest tag invalid format: $LATEST" >&2
+              exit 1
+            fi
+          fi
+          # Guard: tag must not already exist
+          if git rev-parse -q --verify "refs/tags/$NEW" >/dev/null; then
+            echo "Tag $NEW already exists — aborting (manual conflict?)" >&2
+            exit 1
+          fi
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW: ${{ steps.ver.outputs.new }}
+        run: |
+          set -euo pipefail
+          gh release create "$NEW" \
+            --target master \
+            --title "$NEW" \
+            --generate-notes
+
+      - name: Delete merged head branch
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          git push origin --delete "$HEAD_REF" || echo "Branch already deleted"
