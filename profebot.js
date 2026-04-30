@@ -784,7 +784,7 @@ let lastProvider = '';
 async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude) {
     const keys = getProviderKeys();
     const order = PROV_ORDER.filter(p => !!keys[p]);
-    // Si no hay keys locales, enviar orden default (backend usará env vars)
+    // If no local keys, send default order (backend will use env vars)
     const sendOrder = order.length ? order : PROV_ORDER;
     const r = await fetch('profebot.php', {
         method: 'POST',
