@@ -883,7 +883,7 @@ async function loadQ() {
         if (!q) {
             for (let attempt = 0; attempt < 3 && !q; attempt++) {
                 const d = await callAPI(getSys(obj), getUMsg(obj, sessIdx + 1, battCnt, sessAsked), obj.subjKey, cacheKey, sessAsked);
-                // Backend devolvió pregunta del caché (todos los proveedores fallaron)
+                // Backend returned a cached question (all providers failed)
                 if (d.cached && d.question) {
                     q = d.question;
                     fallbackWarning = d.warning || '';
@@ -895,7 +895,7 @@ async function loadQ() {
                 if (!q) console.warn('parseQ retry', attempt + 1, 'on:', txt);
             }
             if (!q) throw new Error('parse');
-            // Save to cache in background (sólo si vino de AI, no si fue fallback)
+            // Save to cache in background (only if from AI, not fallback)
             if (lastProvider !== 'cache_fallback') {
                 saveToCacheBackground(cacheKey, q);
             }

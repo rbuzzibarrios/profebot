@@ -1,11 +1,11 @@
 FROM php:8.2-cli
 
-# Composer (multi-stage para no inflar imagen final)
+# Composer (multi-stage to keep final image small)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Instalar dependencias PHP primero (capa cacheable)
+# Install PHP deps first (cacheable layer)
 COPY composer.json /app/
 COPY composer.lock* /app/
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
