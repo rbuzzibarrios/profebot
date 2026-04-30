@@ -7,6 +7,8 @@ $path = ltrim($uri, '/');
 
 $blocked = [
     '#^materiales(/|$)#i',
+    '#^vendor(/|$)#i',
+    '#^composer\.(json|lock)$#i',
     '#^question_cache\.json$#i',
     '#^config\.php$#i',
     '#(^|/)\.env$#i',
