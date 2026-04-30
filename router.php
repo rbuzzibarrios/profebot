@@ -1,6 +1,6 @@
 <?php
-// Router para PHP built-in server: bloquea acceso HTTP a archivos privados.
-// Uso: php -S 0.0.0.0:8080 router.php
+// Router for PHP built-in server: blocks HTTP access to private files.
+// Usage: php -S 0.0.0.0:8080 router.php
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = ltrim($uri, '/');
