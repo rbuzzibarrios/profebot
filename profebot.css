@@ -1496,3 +1496,14 @@ body {
         padding: 13px 10px;
     }
 }
+
+.version-tag {
+    text-align: center;
+    font-size: .65rem;
+    font-weight: 700;
+    color: var(--muted);
+    opacity: .55;
+    letter-spacing: .5px;
+    margin: 14px 0 6px;
+    font-family: 'Nunito', sans-serif;
+}
