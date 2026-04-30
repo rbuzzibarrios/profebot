@@ -15,6 +15,24 @@ use Monolog\Handler\StreamHandler;
 define('CACHE_FILE', __DIR__.'/question_cache.json');
 define('CACHE_MAX_PER_KEY', 50);
 
+// ── VERSION ──
+function pb_version()
+{
+    static $v = null;
+    if ($v !== null) {
+        return $v;
+    }
+    $f = __DIR__.'/VERSION';
+    if (is_file($f)) {
+        $v = trim(file_get_contents($f));
+        if ($v !== '') {
+            return $v;
+        }
+    }
+    $v = 'dev';
+    return $v;
+}
+
 // ── LOGGER ──
 function pb_log()
 {
@@ -518,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($cacheHit) {
         pb_log_info('Cache fallback served', ['cache_key' => $fallbackCacheKey, 'match' => $cacheMatchType]);
         $warningKid = '¡Hoy juego con preguntas guardadas! Mi cerebro mágico está descansando.';
-        $warning = 'El servicio de IA está saturado. Usando una pregunta del caché ('.$cacheMatchType.').';
+        $warning = 'El servicio de IA está saturado. Usando una pregunta del caché.';
         echo json_encode([
             'cached' => true,
             'question' => $cacheHit,
@@ -548,4 +566,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // ── GET → servir el HTML ──
+$pb_version_js = htmlspecialchars(pb_version(), ENT_QUOTES, 'UTF-8');
+echo "<!-- ProfeBot ".$pb_version_js." -->\n";
+echo "<script>window.APP_VERSION=".json_encode(pb_version()).";</script>\n";
 include __DIR__.'/profebot.html';

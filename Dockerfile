@@ -20,6 +20,7 @@ COPY profebot.css /app/
 COPY profebot.js /app/
 COPY router.php /app/
 COPY favicon.svg /app/
+COPY VERSION /app/
 COPY materiales/ /app/materiales/
 COPY question_cache.json /app/
 COPY google*.html /app/

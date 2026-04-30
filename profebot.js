@@ -1,5 +1,7 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+const APP_VERSION = (typeof window !== 'undefined' && window.APP_VERSION) || 'dev';
+
 // ── CURRICULUM ──
 const GRADES = {
     '1ro': {
@@ -921,12 +923,12 @@ async function loadQ() {
         readQuestion(q);
     } catch (e) {
         if (e.message === 'NO_KEY') {
-            document.getElementById('vContent').innerHTML = `<div style="padding:18px;text-align:center;color:var(--ink);font-weight:700;line-height:1.6">⚠️ Configurá tu API Key arriba antes de empezar.<br><button onclick="stopAll();showS('s0')" style="background:var(--orange);color:white;border:none;padding:9px 18px;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:10px;display:block;width:100%">Ir a configuración</button></div>`;
+            document.getElementById('vContent').innerHTML = `<div style="padding:18px;text-align:center;color:var(--text);font-weight:700;line-height:1.6">⚠️ Configurá tu API Key arriba antes de empezar.<br><button onclick="stopAll();showS('s0')" style="background:var(--orange);color:white;border:none;padding:9px 18px;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:10px;display:block;width:100%">Ir a configuración</button></div>`;
             return;
         }
         const kidMsg = e.kidMsg || '¡Ay! Mi cerebro mágico se cansó un poquito. Vamos a tocar el botón grande y probamos otra vez.';
         const adultMsg = e.message || 'Servicio temporalmente no disponible.';
-        document.getElementById('vContent').innerHTML = `<div class="qbubble" style="text-align:center;background:#fff7e6;border:2px solid var(--orange)"><div style="font-size:56px;margin-bottom:8px">🦉</div><div style="font-size:20px;font-weight:800;color:var(--ink);line-height:1.5;padding:0 6px">${esc(kidMsg)}</div><button onclick="loadQ()" style="background:var(--orange);color:white;border:none;padding:14px 20px;border-radius:14px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:16px;width:100%;font-size:18px">🔄 Probar de nuevo</button><div style="margin-top:14px;padding:10px;background:#fff;border-radius:8px;font-size:12px;color:#666;line-height:1.4;text-align:left">⚠️ <b>Para adultos:</b> ${esc(adultMsg)}</div></div>`;
+        document.getElementById('vContent').innerHTML = `<div class="qbubble" style="text-align:center;background:#fff7e6;border:2px solid var(--orange)"><div style="font-size:56px;margin-bottom:8px">🦉</div><div style="font-size:20px;font-weight:800;color:var(--text);line-height:1.5;padding:0 6px">${esc(kidMsg)}</div><button onclick="loadQ()" style="background:var(--orange);color:white;border:none;padding:14px 20px;border-radius:14px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:16px;width:100%;font-size:18px">🔄 Probar de nuevo</button><div style="margin-top:14px;padding:10px;background:#fff;border-radius:8px;font-size:12px;color:#666;line-height:1.4;text-align:left">⚠️ <b>Para quien te acompaña:</b> ${esc(adultMsg)}</div></div>`;
         speak(kidMsg);
     }
 }
@@ -934,7 +936,7 @@ async function loadQ() {
 function renderQ(q) {
     const letters = ['A', 'B', 'C', 'D'].filter(l => q.opts[l]);
     document.getElementById('vContent').innerHTML = `
-    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div><br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para adultos: ' + esc(q.warning) + '</div>' : ''}</div>
+    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div><br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para quien te acompaña: ' + esc(q.warning) + '</div>' : ''}</div>
     <div class="opts">${letters.map(l => `<button class="opt" data-l="${l}" onclick="chooseAns('${l}')" id="opt${l}"><span class="oltr">${l}</span><span>${esc(q.opts[l])}</span></button>`).join('')}</div>
     <div class="vfeedback" id="vfb"></div>
     <div class="vexpl" id="vex"></div>
@@ -1126,6 +1128,8 @@ function esc(s) {
     updSel();
     initApiUI();
     loadDefaultMaterials();
+    const vt = document.getElementById('versionTag');
+    if (vt) vt.textContent = APP_VERSION;
     if (!SR) {
         useSR = false;
         document.getElementById('srToggle').classList.remove('on');

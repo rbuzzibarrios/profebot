@@ -1,0 +1,41 @@
+name: Bump VERSION on release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write VERSION
+        run: echo "${{ github.event.release.tag_name }}" > VERSION
+
+      - name: Commit + push to master
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet VERSION; then
+            echo "No change"
+            exit 0
+          fi
+          git add VERSION
+          git commit -m "chore: bump VERSION to ${{ github.event.release.tag_name }}"
+          git push origin master
+
+      - name: Sync develop
+        run: |
+          git fetch origin develop
+          git checkout develop
+          git merge --no-ff master -m "chore: sync VERSION bump from master"
+          git push origin develop
