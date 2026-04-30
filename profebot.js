@@ -802,7 +802,10 @@ async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude) {
     });
     if (!r.ok) {
         const d = await r.json().catch(() => ({}));
-        throw new Error(d.error || 'HTTP ' + r.status);
+        const err = new Error(d.error || 'HTTP ' + r.status);
+        err.code = d.code || '';
+        err.kidMsg = d.error_kid || '';
+        throw err;
     }
     const d = await r.json();
     if (d.provider) lastProvider = d.provider;
@@ -914,6 +917,12 @@ async function loadQ() {
         renderQ(q);
         readQuestion(q);
     } catch (e) {
+        if (e.code === 'AI_BUSY_NO_CACHE') {
+            const kid = esc(e.kidMsg || '¡Ups! Mi cerebro está pensando mucho. Tocá el botón y probamos otra vez.');
+            const adult = esc(e.message);
+            document.getElementById('vContent').innerHTML = `<div class="qbubble" style="text-align:center"><div style="font-size:48px;margin-bottom:6px">🦉</div><div style="font-size:18px;font-weight:800;color:var(--ink);line-height:1.5">${kid}</div><div class="prov-warning" style="margin-top:12px">⚠️ Para adultos: ${adult}</div><button onclick="loadQ()" style="background:var(--orange);color:white;border:none;padding:11px 20px;border-radius:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:14px;width:100%;font-size:16px">🔄 Reintentar</button></div>`;
+            return;
+        }
         const msg = e.message === 'NO_KEY' ? '⚠️ Configurá tu API Key arriba antes de empezar.' : '❌ Error: ' + e.message;
         document.getElementById('vContent').innerHTML = `<div style="padding:18px;text-align:center;color:#f87171;font-weight:700;line-height:1.6">${msg}<br><button onclick="${e.message === 'NO_KEY' ? 'stopAll();showS(\'s0\')' : 'loadQ()'}" style="background:var(--orange);color:white;border:none;padding:9px 18px;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;margin-top:10px;display:block;width:100%">${e.message === 'NO_KEY' ? 'Ir a configuración' : '🔄 Reintentar'}</button></div>`;
     }
