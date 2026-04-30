@@ -34,5 +34,7 @@ if (is_file($full)) {
     return false;
 }
 
-include __DIR__.'/profebot.php';
+http_response_code(404);
+header('Content-Type: text/plain');
+echo '404 Not Found';
 return true;
