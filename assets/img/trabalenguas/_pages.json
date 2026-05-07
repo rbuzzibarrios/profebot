@@ -1,0 +1,28 @@
+[
+  {
+    "file": "assets/img/trabalenguas/page001.png",
+    "page": 1,
+    "width": 993,
+    "height": 1404,
+    "near_text": "Trabalenguas Erre con erre, guitarra; erre con erre, carril: rápido ruedan los carros, por la línea del ferrocarril. Había una caracatrepa con tres caracatrepitos. Cuando la caracatrepa trepa, trepan los tres caracatrepitos. La gatita de Katica encontró una rata en la torre. Cuando Katica vio a su gata En la torre con la rata Gritó, la rata te ataca Y Katica vio a la gata tras la rata, corre, corr",
+    "subj": "len",
+    "units": [
+      4
+    ],
+    "source_pdf": "1248_Trabalenguas para el 6to año de vida.pdf",
+    "kind": "page_render"
+  },
+  {
+    "file": "assets/img/trabalenguas/page002.png",
+    "page": 2,
+    "width": 993,
+    "height": 1404,
+    "near_text": "Si la col tuviera cara como tiene el caracol, Fuera cara, fuera col, fuera cara caracol. El pescador pesca, pesca Trata de pescar un pez, Y si lo pesca, pesca, Que buen pescador es.",
+    "subj": "len",
+    "units": [
+      4
+    ],
+    "source_pdf": "1248_Trabalenguas para el 6to año de vida.pdf",
+    "kind": "page_render"
+  }
+]

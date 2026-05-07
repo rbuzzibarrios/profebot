@@ -6,3 +6,11 @@ config.php
 .idea/
 TODO.md
 vendor/
+
+# Local one-shot scripts (scratch tooling, not runtime)
+cubaeduca.py
+descarga.py
+explore.py
+findetg-cubaeduca.py
+extract_preesc_images.py
+tag_images.py

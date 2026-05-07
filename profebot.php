@@ -81,8 +81,14 @@ function pb_log_info($msg, array $ctx = [])
 
 // ── MATERIALS (server-side read; never exposed via HTTP) ──
 define('MATERIALS_DIR', __DIR__.'/materiales');
-define('MATERIAL_MAX_CHARS', 3000);
+// Total char budget per request (split across matched materials).
+// Replaces the legacy per-file MATERIAL_MAX_CHARS limit.
+define('MATERIAL_BUDGET_CHARS', 8000);
 
+// Each entry may declare `units` as a list of unit indices (matching the
+// JS GRADES[grade].subjects[subj].units order) it applies to. Omit `units`
+// to mean "applies to every unit of that grade/subject" (back-compat for
+// 1ro textbooks that span the whole curriculum).
 $DEFAULT_MATERIALS = [
     ['file' => 'leng_libro_antiguo.txt', 'name' => 'Libro Lengua (antiguo)', 'subj' => 'leng', 'grade' => '1ro'],
     ['file' => 'leng_libro.txt', 'name' => '¡A leer! 1er. Grado', 'subj' => 'leng', 'grade' => '1ro'],
@@ -90,29 +96,44 @@ $DEFAULT_MATERIALS = [
     ['file' => 'mat_libro_antiguo.txt', 'name' => 'Libro Matemática (antiguo)', 'subj' => 'mat', 'grade' => '1ro'],
     ['file' => 'mat_libro.txt', 'name' => 'Matemática 1er. Grado', 'subj' => 'mat', 'grade' => '1ro'],
     ['file' => 'mat_cuaderno.txt', 'name' => 'Cuaderno Matemática', 'subj' => 'mat', 'grade' => '1ro'],
-    ['file' => 'preesc_mat_conjuntos.txt', 'name' => 'Nociones Matemáticas: Conjuntos (5to)', 'subj' => 'mat', 'grade' => 'preesc'],
-    ['file' => 'preesc_mat_problemas.txt', 'name' => 'Solución de Problemas Sencillos (6to)', 'subj' => 'mat', 'grade' => 'preesc'],
-    ['file' => 'preesc_mat_operaciones.txt', 'name' => 'Operaciones Combinadas de Conjuntos (6to)', 'subj' => 'mat', 'grade' => 'preesc'],
-    ['file' => 'preesc_mat_longitudes.txt', 'name' => 'Trabajo con Longitudes (6to)', 'subj' => 'mat', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_fonico.txt', 'name' => 'Cuaderno de Análisis Fónico (6to)', 'subj' => 'len', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_cuentos.txt', 'name' => 'Cuentos para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_poesias.txt', 'name' => 'Poesías para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_adivinanzas.txt', 'name' => 'Adivinanzas 5to y 6to año', 'subj' => 'len', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_fabulas.txt', 'name' => 'Fábulas para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_6to_cuentos.txt', 'name' => 'Cuentos para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_6to_poesias.txt', 'name' => 'Poesías para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_6to_fabulas.txt', 'name' => 'Fábulas para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
-    ['file' => 'preesc_len_trabalenguas.txt', 'name' => 'Trabalenguas para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc'],
+    ['file' => 'preesc_mat_conjuntos.txt', 'name' => 'Nociones Matemáticas: Conjuntos (5to)', 'subj' => 'mat', 'grade' => 'preesc', 'units' => [0, 1, 2]],
+    ['file' => 'preesc_mat_problemas.txt', 'name' => 'Solución de Problemas Sencillos (6to)', 'subj' => 'mat', 'grade' => 'preesc', 'units' => [4]],
+    ['file' => 'preesc_mat_operaciones.txt', 'name' => 'Operaciones Combinadas de Conjuntos (6to)', 'subj' => 'mat', 'grade' => 'preesc', 'units' => [4]],
+    ['file' => 'preesc_mat_longitudes.txt', 'name' => 'Trabajo con Longitudes (6to)', 'subj' => 'mat', 'grade' => 'preesc', 'units' => [3]],
+    ['file' => 'preesc_len_fonico.txt', 'name' => 'Cuaderno de Análisis Fónico (6to)', 'subj' => 'len', 'grade' => 'preesc', 'units' => [0]],
+    ['file' => 'preesc_len_cuentos.txt', 'name' => 'Cuentos para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc', 'units' => [1]],
+    ['file' => 'preesc_len_poesias.txt', 'name' => 'Poesías para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc', 'units' => [3]],
+    ['file' => 'preesc_len_adivinanzas.txt', 'name' => 'Adivinanzas 5to y 6to año', 'subj' => 'len', 'grade' => 'preesc', 'units' => [4]],
+    ['file' => 'preesc_len_fabulas.txt', 'name' => 'Fábulas para el 5to año de vida', 'subj' => 'len', 'grade' => 'preesc', 'units' => [2]],
+    ['file' => 'preesc_len_6to_cuentos.txt', 'name' => 'Cuentos para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc', 'units' => [1]],
+    ['file' => 'preesc_len_6to_poesias.txt', 'name' => 'Poesías para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc', 'units' => [3]],
+    ['file' => 'preesc_len_6to_fabulas.txt', 'name' => 'Fábulas para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc', 'units' => [2]],
+    ['file' => 'preesc_len_trabalenguas.txt', 'name' => 'Trabalenguas para el 6to año de vida', 'subj' => 'len', 'grade' => 'preesc', 'units' => [4]],
 ];
 
-function build_default_ctx($grade, $subj, $materials)
+function build_default_ctx($grade, $subj, $unit_idx, $materials)
 {
-    $matches = array_values(array_filter($materials, function ($m) use ($grade, $subj) {
-        return $m['grade'] === $grade && $m['subj'] === $subj;
+    // Pass unit_idx === null to skip the unit filter (legacy behavior).
+    $unit_int = ($unit_idx === null || $unit_idx === '') ? null : (int)$unit_idx;
+
+    $matches = array_values(array_filter($materials, function ($m) use ($grade, $subj, $unit_int) {
+        if ($m['grade'] !== $grade || $m['subj'] !== $subj) return false;
+        if ($unit_int === null) return true;
+        // No `units` key = applies to every unit (1ro textbooks span the whole curriculum).
+        if (!isset($m['units']) || !is_array($m['units']) || empty($m['units'])) return true;
+        return in_array($unit_int, $m['units'], true);
     }));
-    if (empty($matches)) return '';
+    if (empty($matches)) {
+        pb_log_info('Materials ctx empty', ['grade' => $grade, 'subj' => $subj, 'unit_idx' => $unit_int]);
+        return '';
+    }
+
+    // Distribute the global budget evenly across matched files.
+    $per_file = (int) floor(MATERIAL_BUDGET_CHARS / count($matches));
     $ctx = "\n\n=== MATERIALES DEL CURRÍCULO ===\nUsá este contenido como guía para el nivel y estilo de las preguntas. Si el tema no aparece en el material, generá la pregunta igualmente basándote en el objetivo.\n\n";
     $i = 1;
+    $total_chars = 0;
+    $picked_files = [];
     foreach ($matches as $m) {
         $path = MATERIALS_DIR.'/'.$m['file'];
         if (!is_readable($path)) continue;
@@ -120,14 +141,77 @@ function build_default_ctx($grade, $subj, $materials)
         if ($raw === false) continue;
         $content = trim($raw);
         if (function_exists('mb_substr')) {
-            $content = mb_substr($content, 0, MATERIAL_MAX_CHARS);
+            $content = mb_substr($content, 0, $per_file);
         } else {
-            $content = substr($content, 0, MATERIAL_MAX_CHARS);
+            $content = substr($content, 0, $per_file);
         }
         $ctx .= "--- $i: ".substr($m['name'], 0, 50)." ---\n$content\n\n";
+        $total_chars += strlen($content);
+        $picked_files[] = $m['file'];
         $i++;
     }
+    pb_log_info('Materials ctx built', [
+        'grade'       => $grade,
+        'subj'        => $subj,
+        'unit_idx'    => $unit_int,
+        'files'       => $picked_files,
+        'per_file'    => $per_file,
+        'total_chars' => $total_chars,
+    ]);
     return $ctx."=== FIN ===\n";
+}
+
+// ── IMAGE INDEX (assets/img/_index.json, generated by tag_images.py) ──
+define('IMAGE_INDEX_FILE', __DIR__.'/assets/img/_index.json');
+define('IMAGE_PROMPT_MAX', 10); // cap items injected per request to keep prompt small
+
+function image_index()
+{
+    static $index = null;
+    if ($index !== null) return $index;
+    if (!is_readable(IMAGE_INDEX_FILE)) {
+        $index = [];
+        return $index;
+    }
+    $raw = @file_get_contents(IMAGE_INDEX_FILE);
+    $decoded = $raw ? json_decode($raw, true) : null;
+    $index = is_array($decoded) ? $decoded : [];
+    return $index;
+}
+
+function build_image_ctx($grade, $subj, $unit_idx)
+{
+    // Images currently only curated for preescolar.
+    if ($grade !== 'preesc') return '';
+    $unit_int = ($unit_idx === null || $unit_idx === '') ? null : (int)$unit_idx;
+
+    $matches = array_values(array_filter(image_index(), function ($img) use ($subj, $unit_int) {
+        if (empty($img['useful'])) return false;
+        if (($img['subj'] ?? '') !== $subj) return false;
+        if ($unit_int === null) return true;
+        $units = $img['units'] ?? [];
+        return is_array($units) && in_array($unit_int, $units, true);
+    }));
+    if (empty($matches)) return '';
+
+    // Random sample to keep prompt small + add variety across calls.
+    if (count($matches) > IMAGE_PROMPT_MAX) {
+        $keys = array_rand($matches, IMAGE_PROMPT_MAX);
+        $matches = array_map(fn($k) => $matches[$k], (array)$keys);
+    }
+
+    $ctx = "\n\n=== IMÁGENES DISPONIBLES PARA ESTA UNIDAD ===\n";
+    $ctx .= "Si la pregunta lo requiere (ej: colores, formas, identificar personajes visualmente), podés mostrar UNA imagen agregando ANTES de la línea PREGUNTA esta línea exacta:\nIMAGEN: <ruta>\n";
+    $ctx .= "Solo elegí entre estas rutas (no inventes ni modifiques nombres). Si ninguna calza con tu pregunta, NO uses IMAGEN.\n\n";
+    foreach ($matches as $img) {
+        $ctx .= "- ".$img['file']." — ".trim($img['description'] ?? '')."\n";
+    }
+    pb_log_info('Image ctx built', [
+        'subj'     => $subj,
+        'unit_idx' => $unit_int,
+        'count'    => count($matches),
+    ]);
+    return $ctx."=== FIN IMÁGENES ===\n";
 }
 
 // Load .env if present (local php -S)
@@ -456,7 +540,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $d = json_decode($resp, true);
                         $text = $d['content'][0]['text'] ?? null;
                         $err = $d['error']['message'] ?? null;
-                        return ['text' => $text, 'error' => $err];
+                        $usage = $d['usage'] ?? null;
+                        return ['text' => $text, 'error' => $err, 'usage' => $usage];
                     },
             ],
             'gemini' => [
@@ -532,10 +617,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Inject curriculum materials context (server-side)
+    $materials_chars = 0;
+    $images_chars = 0;
     if (!empty($data['material_grade']) && !empty($data['material_subj'])) {
-        $extra = build_default_ctx($data['material_grade'], $data['material_subj'], $DEFAULT_MATERIALS);
+        $unit_idx = isset($data['material_unit_idx']) ? $data['material_unit_idx'] : null;
+        $extra = build_default_ctx($data['material_grade'], $data['material_subj'], $unit_idx, $DEFAULT_MATERIALS);
         if ($extra) {
             $data['system'] = (isset($data['system']) ? $data['system'] : '').$extra;
+            $materials_chars = strlen($extra);
+        }
+        $imgCtx = build_image_ctx($data['material_grade'], $data['material_subj'], $unit_idx);
+        if ($imgCtx) {
+            $data['system'] = (isset($data['system']) ? $data['system'] : '').$imgCtx;
+            $images_chars = strlen($imgCtx);
         }
     }
 
@@ -548,7 +642,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $simulate = (getenv('PROFEBOT_DEBUG') === '1' && !empty($data['_simulate'])) ? $data['_simulate'] : '';
 
     // Strip control fields from body before sending to provider
-    unset($data['providers'], $data['provider_order'], $data['material_grade'], $data['material_subj'], $data['cache_key'], $data['cache_exclude'], $data['_simulate']);
+    unset($data['providers'], $data['provider_order'], $data['material_grade'], $data['material_subj'], $data['material_unit_idx'], $data['cache_key'], $data['cache_exclude'], $data['_simulate']);
 
     // Fallback loop
     $errors = [];
@@ -625,7 +719,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Success → parse and return
         $parsed = $prov['parse']($response);
         if ($parsed['text']) {
-            $out = ['content' => [['text' => $parsed['text']]], 'provider' => $pid];
+            $userChars = 0;
+            foreach (($data['messages'] ?? []) as $m) {
+                $userChars += strlen($m['content'] ?? '');
+            }
+            $out = [
+                'content'  => [['text' => $parsed['text']]],
+                'provider' => $pid,
+                'stats'    => [
+                    'system_chars'    => strlen($data['system'] ?? ''),
+                    'user_chars'      => $userChars,
+                    'materials_chars' => $materials_chars,
+                    'images_chars'    => $images_chars,
+                ],
+            ];
             if (!empty($parsed['usage'])) {
                 $out['usage'] = $parsed['usage'];
             }

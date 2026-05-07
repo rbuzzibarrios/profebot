@@ -124,7 +124,6 @@ HTTP client: Guzzle 7 (declared in `composer.json`).
 - Upstash Redis (REST API) — persistent question cache (optional, env-gated)
 - Guzzle HTTP 7 — HTTP client for Upstash REST calls
 - pdf.js v3.11.174 (CDN) — PDF text extraction, limited to 12,000 chars
-- All Origins API — web content proxy for URL materials, limited to 12,000 chars
 - Google Fonts (CDN)
 
 ## Language

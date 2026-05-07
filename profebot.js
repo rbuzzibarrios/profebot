@@ -427,10 +427,8 @@ function switchGrade(gk, btn) {
     renderUnits();
     // Swap default materials for this grade
     sources = sources.filter(s => !s.grade);
-    ['srcList', 'urlList'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = '';
-    });
+    const srcEl = document.getElementById('srcList');
+    if (srcEl) srcEl.innerHTML = '';
     loadDefaultMaterials();
 }
 
@@ -546,35 +544,11 @@ async function procPDF(file) {
     rSrc(src);
 }
 
-async function addUrl() {
-    const inp = document.getElementById('urlInp');
-    let raw = inp.value.trim();
-    if (!raw) return;
-    if (!/^https?:\/\//i.test(raw)) raw = 'https://' + raw;
-    inp.value = '';
-    const id = 'u' + Date.now().toString(36);
-    const src = { type: 'url', id, name: raw, content: '', status: 'loading' };
-    sources.push(src);
-    rSrc(src);
-    try {
-        const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(raw)}`);
-        if (!r.ok) throw 0;
-        const html = await r.text();
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        ['script', 'style', 'nav', 'footer', 'header', 'aside', 'noscript'].forEach(t => doc.querySelectorAll(t).forEach(e => e.remove()));
-        src.content = (doc.body?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 12000);
-        src.status = src.content.length > 50 ? 'ok' : 'err';
-    } catch {
-        src.status = 'err';
-    }
-    rSrc(src);
-}
-
 function rSrc(src) {
     const sm = { ok: '✅', loading: '⏳', err: '❌' }, st = { ok: 'sok', loading: 'sld', err: 'ser' };
-    const h = `<div class="sit ${src.type}" id="${src.id}"><span>${src.type === 'pdf' ? '📄' : '🔗'}</span><span class="sn">${esc(src.name.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40))}</span><span class="sstat ${st[src.status]}">${sm[src.status]}</span><button class="xbtn" onclick="rmSrc('${src.id}')">✕</button></div>`;
+    const h = `<div class="sit pdf" id="${src.id}"><span>📄</span><span class="sn">${esc(src.name.slice(0, 40))}</span><span class="sstat ${st[src.status]}">${sm[src.status]}</span><button class="xbtn" onclick="rmSrc('${src.id}')">✕</button></div>`;
     const el = document.getElementById(src.id);
-    const list = document.getElementById(src.type === 'pdf' ? 'srcList' : 'urlList');
+    const list = document.getElementById('srcList');
     if (el) el.outerHTML = h; else list.insertAdjacentHTML('beforeend', h);
 }
 
@@ -714,12 +688,17 @@ INSTRUCCIONES:
 3. La otra opción debe ser INCORRECTA pero creíble.
 4. En CORRECTA: pon solo A o B.
 
-FORMATO OBLIGATORIO (exactamente 5 líneas, sin texto extra, sin markdown):
+FORMATO OBLIGATORIO (5 líneas, sin texto extra, sin markdown):
 PREGUNTA: [máx 15 palabras, muy concreta]
 A) [1-4 palabras]
 B) [1-4 palabras]
 CORRECTA: [A o B]
 EXPLICACION: [1 oración corta y simple]
+
+OPCIONAL (solo si la sección "IMÁGENES DISPONIBLES" más abajo lista una imagen útil para tu pregunta): agregá ANTES de la línea PREGUNTA una sola línea adicional así:
+IMAGEN: assets/img/<ruta exacta de la lista>
+
+Si no usás imagen, NO incluyas la línea IMAGEN.
 
 Ejemplo lengua:
 PREGUNTA: ¿Con qué sonido empieza la palabra mamá?
@@ -783,7 +762,7 @@ function getUMsg(obj, n, tot, prev) {
 
 let lastProvider = '';
 
-async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude) {
+async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude, unitIdx) {
     const keys = getProviderKeys();
     const order = PROV_ORDER.filter(p => !!keys[p]);
     // If no local keys, send default order (backend will use env vars)
@@ -795,6 +774,7 @@ async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude) {
         provider_order: sendOrder,
         material_grade: _grade,
         material_subj: subjKey || '',
+        material_unit_idx: (unitIdx === undefined || unitIdx === null) ? '' : String(unitIdx),
         cache_key: cacheKey || '',
         cache_exclude: cacheExclude || []
     };
@@ -814,13 +794,31 @@ async function callAPI(sys, userMsg, subjKey, cacheKey, cacheExclude) {
     }
     const d = await r.json();
     if (d.provider) lastProvider = d.provider;
+    logCallStats(d);
     return d;
+}
+
+// Normalize provider-specific usage shapes (gemini/groq/claude) and log to console.
+function logCallStats(d) {
+    if (!d || !d.provider) return;
+    const u = d.usage || {};
+    const inTok  = u.promptTokenCount     ?? u.prompt_tokens     ?? u.input_tokens  ?? null;
+    const outTok = u.candidatesTokenCount ?? u.completion_tokens ?? u.output_tokens ?? null;
+    const totTok = u.totalTokenCount ?? u.total_tokens ?? (((inTok ?? 0) + (outTok ?? 0)) || null);
+    const s = d.stats || {};
+    console.log(
+        `%c[ProfeBot] ${d.provider}`,
+        'color:#4A90D9;font-weight:bold',
+        { tokens_in: inTok, tokens_out: outTok, tokens_total: totTok, system_chars: s.system_chars, user_chars: s.user_chars, materials_chars: s.materials_chars }
+    );
 }
 
 // ── PARSE ──
 function parseQ(txt) {
     // Model sometimes wraps response in markdown blocks or adds asterisks
     txt = txt.replace(/```[a-z]*\n?/g, '').replace(/\*\*/g, '').trim();
+    // Optional IMAGEN: <ruta> line, must reference assets/img/...
+    const im = txt.match(/^IMAGEN:\s*(assets\/img\/[^\s\n]+)/im);
     const qm = txt.match(/PREGUNTA:\s*(.+?)(?=\n[A-D]\))/is);
     const am = txt.match(/^A\)\s*(.+)/im), bm = txt.match(/^B\)\s*(.+)/im);
     const cm = txt.match(/^C\)\s*(.+)/im), dm = txt.match(/^D\)\s*(.+)/im);
@@ -828,6 +826,7 @@ function parseQ(txt) {
     if (!qm || !am || !bm || !cr) return null;
     return {
         question: qm[1].trim(),
+        image: im ? im[1].trim() : '',
         opts: { A: am[1].trim(), B: bm[1].trim(), C: cm ? cm[1].trim() : '', D: dm ? dm[1].trim() : '' },
         correct: cr[1].toUpperCase(),
         explanation: ex ? ex[1].trim() : ''
@@ -849,7 +848,7 @@ function saveToCacheBackground(cacheKey, q) {
     const body = {
         action: 'cache_save',
         cache_key: cacheKey,
-        question: { question: q.question, opts: q.opts, correct: q.correct, explanation: q.explanation }
+        question: { question: q.question, image: q.image || '', opts: q.opts, correct: q.correct, explanation: q.explanation }
     };
     fetch('profebot.php', {
         method: 'POST',
@@ -890,7 +889,9 @@ async function loadQ() {
         let fallbackWarningKid = '';
         if (!q) {
             for (let attempt = 0; attempt < 3 && !q; attempt++) {
-                const d = await callAPI(getSys(obj), getUMsg(obj, sessIdx + 1, battCnt, sessAsked), obj.subjKey, cacheKey, sessAsked);
+                // obj.k format: "{subj}::{unitIdx}::{objIdx}" — pull unit idx for material filtering
+                const unitIdx = obj.k.split('::')[1];
+                const d = await callAPI(getSys(obj), getUMsg(obj, sessIdx + 1, battCnt, sessAsked), obj.subjKey, cacheKey, sessAsked, unitIdx);
                 // Backend returned a cached question (all providers failed)
                 if (d.cached && d.question) {
                     q = d.question;
@@ -935,8 +936,11 @@ async function loadQ() {
 
 function renderQ(q) {
     const letters = ['A', 'B', 'C', 'D'].filter(l => q.opts[l]);
+    // Only render image if path matches expected prefix (defense in depth — backend already restricts).
+    const safeImg = q.image && /^assets\/img\/[\w\-/.]+\.(png|jpe?g|svg|webp)$/i.test(q.image) ? q.image : '';
+    const imgHtml = safeImg ? `<img class="qimg" src="${esc(safeImg)}" alt="" onerror="this.style.display='none'">` : '';
     document.getElementById('vContent').innerHTML = `
-    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div><br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para quien te acompaña: ' + esc(q.warning) + '</div>' : ''}</div>
+    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div>${imgHtml}<br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para quien te acompaña: ' + esc(q.warning) + '</div>' : ''}</div>
     <div class="opts">${letters.map(l => `<button class="opt" data-l="${l}" onclick="chooseAns('${l}')" id="opt${l}"><span class="oltr">${l}</span><span>${esc(q.opts[l])}</span></button>`).join('')}</div>
     <div class="vfeedback" id="vfb"></div>
     <div class="vexpl" id="vex"></div>
