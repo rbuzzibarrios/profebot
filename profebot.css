@@ -940,6 +940,16 @@ body {
     color: var(--amber);
 }
 
+.qimg {
+    display: block;
+    max-width: 100%;
+    max-height: 240px;
+    margin: 8px auto 6px;
+    border-radius: 12px;
+    background: white;
+    object-fit: contain;
+}
+
 .opts {
     display: grid;
     grid-template-columns:1fr 1fr;
