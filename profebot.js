@@ -485,32 +485,92 @@ function renderUnits() {
             return `<label class="obj-row${chk ? ' chk' : ''}" id="or-${k.replace(/::/g, '_')}"><input type="checkbox" ${chk ? 'checked' : ''} onchange="toggleObj('${k}',this.checked)"/><span>${esc(o)}</span></label>`;
         }).join('');
         const cnt = u.objs.filter((_, oi) => selObjs.has(`${_subj}::${ui}::${oi}`)).length;
-        return `<div class="unit-blk"><div class="unit-hdr" onclick="toggleUnit(this)"><span>${data.icon}</span><span>${esc(u.name)}</span><span class="ubadge">${cnt}/${u.objs.length}</span><span class="utog">▼</span></div><div class="unit-body">${rows}</div></div>`;
+        const allOn = cnt === u.objs.length;
+        const btnLbl = allOn ? '◻ Ninguno' : '✅ Todos';
+        const btnCls = allOn ? 'usel on' : 'usel';
+        return `<div class="unit-blk"><div class="unit-hdr" onclick="toggleUnit(this)"><span>${data.icon}</span><span class="uname">${esc(u.name)}</span><span class="ubadge">${cnt}/${u.objs.length}</span><button type="button" class="${btnCls}" onclick="toggleUnitAll(${ui}, event)">${btnLbl}</button><span class="utog">▼</span></div><div class="unit-body">${rows}</div></div>`;
     }).join('');
     updSel();
 }
 
 function toggleUnit(h) {
-    h.classList.toggle('open');
-    h.nextElementSibling.classList.toggle('open');
+    const willOpen = !h.classList.contains('open');
+    const list = h.closest('#unitList');
+    if (list) {
+        list.querySelectorAll('.unit-hdr.open').forEach(other => {
+            if (other !== h) {
+                other.classList.remove('open');
+                if (other.nextElementSibling) other.nextElementSibling.classList.remove('open');
+            }
+        });
+    }
+    h.classList.toggle('open', willOpen);
+    if (h.nextElementSibling) h.nextElementSibling.classList.toggle('open', willOpen);
+    if (willOpen && h.parentElement) {
+        requestAnimationFrame(() => h.parentElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+    }
+}
+
+function toggleUnitAll(ui, ev) {
+    if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+    const unit = getCUR()[_subj].units[ui];
+    if (!unit) return;
+    const keys = unit.objs.map((_, oi) => `${_subj}::${ui}::${oi}`);
+    const allOn = keys.every(k => selObjs.has(k));
+    keys.forEach(k => allOn ? selObjs.delete(k) : selObjs.add(k));
+    renderUnits();
 }
 
 function toggleObj(k, v) {
     v ? selObjs.add(k) : selObjs.delete(k);
     const el = document.getElementById('or-' + k.replace(/::/g, '_'));
     if (el) el.classList.toggle('chk', v);
+    const [s, uiStr] = k.split('::');
+    if (s === _subj) refreshUnitHdr(parseInt(uiStr, 10));
+    updSel();
+}
+
+function refreshUnitHdr(ui) {
+    const subj = getCUR()[_subj];
+    if (!subj) return;
+    const u = subj.units[ui];
+    if (!u) return;
+    const cnt = u.objs.filter((_, oi) => selObjs.has(`${_subj}::${ui}::${oi}`)).length;
+    const blk = document.querySelectorAll('#unitList .unit-blk')[ui];
+    if (!blk) return;
+    const badge = blk.querySelector('.ubadge');
+    const btn = blk.querySelector('.usel');
+    if (badge) badge.textContent = `${cnt}/${u.objs.length}`;
+    if (btn) {
+        const allOn = cnt === u.objs.length;
+        btn.textContent = allOn ? '◻ Ninguno' : '✅ Todos';
+        btn.classList.toggle('on', allOn);
+    }
 }
 
 function selAll(v) {
-    Object.entries(getCUR()).forEach(([s, subj]) => subj.units.forEach((u, ui) => u.objs.forEach((_, oi) => {
-        const k = `${s}::${ui}::${oi}`;
+    const subj = getCUR()[_subj];
+    if (!subj) return;
+    subj.units.forEach((u, ui) => u.objs.forEach((_, oi) => {
+        const k = `${_subj}::${ui}::${oi}`;
         v ? selObjs.add(k) : selObjs.delete(k);
-    })));
+    }));
     renderUnits();
 }
 
 function updSel() {
     document.getElementById('selCount').textContent = `${selObjs.size} objetivo${selObjs.size !== 1 ? 's' : ''}`;
+    const subj = getCUR()[_subj];
+    const btnAll = document.getElementById('btnSelAll');
+    const btnNone = document.getElementById('btnSelNone');
+    if (!subj || !btnAll || !btnNone) return;
+    let total = 0, sel = 0;
+    subj.units.forEach((u, ui) => u.objs.forEach((_, oi) => {
+        total++;
+        if (selObjs.has(`${_subj}::${ui}::${oi}`)) sel++;
+    }));
+    btnAll.classList.toggle('on', total > 0 && sel === total);
+    btnNone.classList.toggle('on', sel === 0);
 }
 
 // ── MATERIALS ──

@@ -333,9 +333,15 @@ body {
     font-family: 'Nunito', sans-serif;
 }
 
+.lnk.on {
+    background: var(--blue);
+    color: white;
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 7px;
+}
+
 .unit-list {
-    max-height: 300px;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -359,8 +365,35 @@ body {
     background: #F9F9F9;
 }
 
+.unit-hdr .uname {
+    flex: 1;
+    min-width: 0;
+}
+
+.unit-hdr .usel {
+    font-family: 'Nunito', sans-serif;
+    font-size: .68rem;
+    font-weight: 800;
+    color: var(--blue);
+    background: white;
+    border: 1.5px solid var(--border);
+    padding: 3px 7px;
+    border-radius: 7px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.unit-hdr .usel:hover {
+    border-color: var(--blue);
+}
+
+.unit-hdr .usel.on {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+}
+
 .unit-hdr .utog {
-    margin-left: auto;
     font-size: .7rem;
     color: var(--muted);
     transition: transform .2s;
