@@ -1547,6 +1547,17 @@ body {
     color: var(--muted);
     opacity: .55;
     letter-spacing: .5px;
-    margin: 14px 0 6px;
+    margin: 14px 0 2px;
+    font-family: 'Nunito', sans-serif;
+}
+
+.copyright-tag {
+    text-align: center;
+    font-size: .6rem;
+    font-weight: 600;
+    color: var(--muted);
+    opacity: .5;
+    letter-spacing: .3px;
+    margin: 0 0 6px;
     font-family: 'Nunito', sans-serif;
 }
