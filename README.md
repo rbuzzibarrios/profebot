@@ -52,6 +52,15 @@ Abrir `http://localhost:8080/profebot.php`
 3. Agregar un **Render Disk** montado en `/var/data` (persistencia del cache)
 4. El cache de preguntas se guarda en `/var/data/question_cache.json`
 
+### Alertas Slack
+
+Para enviar warnings de la app a Slack, crear un Incoming Webhook en Slack y agregar en Render:
+
+- `PROFEBOT_SLACK_WEBHOOK_URL`: URL del webhook de Slack
+- `PROFEBOT_SLACK_DEDUP_SECONDS`: opcional, segundos para evitar repetir el mismo warning; default `300`
+
+Los logs normales (`debug`/`info`) siguen yendo solo a stderr/Render. Slack recibe `warning` o superior.
+
 ## Arquitectura
 
 Monolito en un solo archivo (`profebot.php`):

@@ -6,3 +6,9 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false
+      - key: PROFEBOT_SLACK_WEBHOOK_URL
+        sync: false
+      # Anti-spam: same warning within N seconds is sent to Slack only once.
+      # 300 = 5 min (default). 0 disables grouping.
+      - key: PROFEBOT_SLACK_DEDUP_SECONDS
+        value: "300"

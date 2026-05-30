@@ -18,7 +18,11 @@ ini_set('display_errors', '0');
 @require_once __DIR__.'/vendor/autoload.php';
 
 use Monolog\Logger;
+use Monolog\Handler\DeduplicationHandler;
+use Monolog\Handler\FilterHandler;
+use Monolog\Handler\SlackWebhookHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Handler\WhatFailureGroupHandler;
 
 // ── QUESTION CACHE ──
 define('CACHE_FILE', __DIR__.'/question_cache.json');
@@ -43,6 +47,16 @@ function pb_version()
 }
 
 // ── LOGGER ──
+function pb_slack_dedup_seconds()
+{
+    $value = getenv('PROFEBOT_SLACK_DEDUP_SECONDS');
+    if ($value === false || trim((string)$value) === '') {
+        return 300;
+    }
+
+    return max(0, (int)$value);
+}
+
 function pb_log()
 {
     static $logger = null;
@@ -55,6 +69,41 @@ function pb_log()
     }
     $logger = new Logger('profebot');
     $logger->pushHandler(new StreamHandler('php://stderr', Logger::DEBUG));
+
+    $slackWebhookUrl = trim((string)getenv('PROFEBOT_SLACK_WEBHOOK_URL'));
+    if ($slackWebhookUrl !== '' && class_exists('Monolog\\Handler\\SlackWebhookHandler')) {
+        try {
+            $slackHandler = new SlackWebhookHandler(
+                $slackWebhookUrl,
+                null,
+                'ProfeBot',
+                true,
+                ':warning:',
+                false,
+                true,
+                Logger::WARNING,
+                true
+            );
+
+            $dedupSeconds = pb_slack_dedup_seconds();
+            if ($dedupSeconds > 0) {
+                $slackHandler = new DeduplicationHandler(
+                    $slackHandler,
+                    sys_get_temp_dir().'/profebot-slack-dedup.log',
+                    Logger::WARNING,
+                    $dedupSeconds,
+                    true
+                );
+            }
+
+            // Scalar min-level (not array): forward WARNING and everything above to Slack
+            $slackHandler = new FilterHandler($slackHandler, Logger::WARNING);
+            $logger->pushHandler(new WhatFailureGroupHandler([$slackHandler]));
+        } catch (\Throwable $e) {
+            error_log('[WARN] Slack log handler disabled: '.$e->getMessage());
+        }
+    }
+
     return $logger;
 }
 
