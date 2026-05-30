@@ -662,7 +662,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Fallback loop
     $errors = [];
-    $STOP_CODES = [400, 401]; // config errors, do not retry
+    $stopError = null; // remembers a config error (400/401) to surface if nothing else works
+    $STOP_CODES = [400, 401]; // config errors, do not retry the SAME provider
     $FALLBACK_CODES = [429, 402, 403, 500, 502, 503];
 
     header('Content-Type: application/json');
@@ -711,18 +712,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($httpCode >= 400) {
             $parsed = $prov['parse']($response);
             $msg = $parsed['error'] ?: "HTTP $httpCode";
+            $errors[] = "$pid: $msg";
             if (in_array($httpCode, $STOP_CODES)) {
-                pb_log_error('Provider config error (stop)', [
+                // Config error (bad key, unsupported request). Don't retry this provider,
+                // but keep trying the rest of the chain — another provider may still work.
+                // E.g. Gemini geo-block returns 400 ("User location is not supported") on
+                // Render even though Groq is fine. Remember it to surface a precise message
+                // only if every provider (and the cache) fails.
+                $stopError = ['code' => $httpCode, 'msg' => "$pid: $msg", 'provider' => $pid];
+                pb_log_warn('Provider config error (skip, try next)', [
                     'provider' => $pid,
                     'http_code' => $httpCode,
                     'message' => $msg,
                     'raw' => substr((string)$response, 0, 1000),
                 ]);
-                http_response_code($httpCode);
-                echo json_encode(['error' => "$pid: $msg", 'provider' => $pid]);
-                exit;
+                continue;
             }
-            $errors[] = "$pid: $msg";
             pb_log_warn('Provider HTTP error (fallback)', [
                 'provider' => $pid,
                 'http_code' => $httpCode,
@@ -832,6 +837,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     pb_log_error('Cache fallback empty', ['cache_key' => $fallbackCacheKey]);
+    // If a provider hit a config error (e.g. bad key with a single provider) and nothing
+    // else worked, surface that precise message instead of the generic "AI busy" one.
+    if ($stopError) {
+        http_response_code($stopError['code']);
+        echo json_encode(['error' => $stopError['msg'], 'provider' => $stopError['provider']]);
+        exit;
+    }
     http_response_code(502);
     echo json_encode([
         'code' => 'AI_BUSY_NO_CACHE',
