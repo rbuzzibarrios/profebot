@@ -119,7 +119,7 @@ HTTP client: Guzzle 7 (declared in `composer.json`).
 
 ## External Dependencies
 
-- OpenRouter API (`deepseek/deepseek-v4-flash:free` model, OpenAI-compatible) — primary provider; free models bypass Gemini's datacenter-IP geo-block. Swap model string in `$PROVIDERS['openrouter']['build']` (check live free list at `https://openrouter.ai/api/v1/models`).
+- OpenRouter API (`qwen/qwen3-next-80b-a3b-instruct:free` model, OpenAI-compatible) — primary provider; free models bypass Gemini's datacenter-IP geo-block. Swap model string in `$PROVIDERS['openrouter']['build']` (check live free list at `https://openrouter.ai/api/v1/models`).
 - Groq API (`llama-3.3-70b-versatile` model) — fallback provider
 - Gemini API (`gemini-2.5-flash` model) — fallback provider (geo-blocked from datacenter IPs like Render; direct calls fail with HTTP 400 "User location is not supported")
 - Upstash Redis (REST API) — persistent question cache (optional, env-gated)

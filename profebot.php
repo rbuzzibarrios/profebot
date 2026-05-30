@@ -513,7 +513,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'openrouter' => [
                     'env'   => 'OPENROUTER_API_KEY',
                     'build' => function ($data, $key) {
-                        $model = 'deepseek/deepseek-v4-flash:free';
+                        $model = 'qwen/qwen3-next-80b-a3b-instruct:free';
                         $body = ['model' => $model, 'max_tokens' => 2048, 'messages' => []];
                         if (!empty($data['system'])) {
                             $body['messages'][] = ['role' => 'system', 'content' => $data['system']];
