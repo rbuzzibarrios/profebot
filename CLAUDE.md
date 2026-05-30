@@ -45,7 +45,7 @@ Requirements: PHP 7.0+ with cURL extension, modern browser with Web Speech API s
 
 **Single-file monolith** — `profebot.php` contains everything:
 
-- **PHP backend (top):** Multi-provider API proxy with automatic fallback. Supports Groq and Gemini. Reads provider keys from POST body or env vars (`GROQ_API_KEY`, `GEMINI_API_KEY`). Tries providers in client-specified order; falls back on 429/402/403/500/502/503 or cURL errors; stops on 400/401.
+- **PHP backend (top):** Multi-provider API proxy with automatic fallback. Supports OpenRouter, Groq, Gemini, and Claude. Reads provider keys from POST body or env vars (`OPENROUTER_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`). Tries providers in client-specified order; falls back on 429/402/403/500/502/503 or cURL errors; stops on 400/401.
 - **HTML (middle):** 5 screen states — s0 (setup), sMat (materials), sVoice (learning), sRep (report), sHist (history).
 - **CSS:** Custom variables, mobile-first (max-width 640px), child-friendly design with Google Fonts (Nunito, Baloo 2).
 - **JavaScript (bottom):** All app logic including API calls, question parsing, speech synthesis/recognition, session management.
@@ -119,8 +119,9 @@ HTTP client: Guzzle 7 (declared in `composer.json`).
 
 ## External Dependencies
 
-- Groq API (`llama-3.3-70b-versatile` model) — primary provider
-- Gemini API (`gemini-2.5-flash` model) — fallback provider
+- OpenRouter API (`deepseek/deepseek-chat:free` model, OpenAI-compatible) — primary provider; free models bypass Gemini's datacenter-IP geo-block. Swap model string in `$PROVIDERS['openrouter']['build']`.
+- Groq API (`llama-3.3-70b-versatile` model) — fallback provider
+- Gemini API (`gemini-2.5-flash` model) — fallback provider (geo-blocked from datacenter IPs like Render; direct calls fail with HTTP 400 "User location is not supported")
 - Upstash Redis (REST API) — persistent question cache (optional, env-gated)
 - Guzzle HTTP 7 — HTTP client for Upstash REST calls
 - pdf.js v3.11.174 (CDN) — PDF text extraction, limited to 12,000 chars

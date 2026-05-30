@@ -38,6 +38,21 @@
         <div class="prov-section" id="provConfig">
             <div class="prov-title">🔑 Configurar Proveedores de IA</div>
 
+            <div class="prov-row" id="provRow_openrouter">
+                <div class="prov-hdr" onclick="toggleProv('openrouter')">
+                    <span>🌐 OpenRouter</span>
+                    <span class="prov-status" id="provSt_openrouter">❌</span>
+                </div>
+                <div class="prov-body" id="provBody_openrouter">
+                    <p>Obtené tu key en <a href="https://openrouter.ai/keys" target="_blank"><strong>openrouter.ai/keys</strong></a>
+                        → Create Key. Usa modelos <strong>:free</strong> sin geo-bloqueo.</p>
+                    <div class="api-row">
+                        <input class="api-inp" type="password" id="provInp_openrouter" placeholder="sk-or-..."/>
+                        <button class="api-save" onclick="saveProv('openrouter')">Guardar</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="prov-row" id="provRow_claude">
                 <div class="prov-hdr" onclick="toggleProv('claude')">
                     <span>🟠 Claude</span>

@@ -167,9 +167,10 @@ let currentQ = null, srActive = false;
 // ── PROVEEDORES ──
 const PK = 'profebot_providers';
 const PROV_META = {
-    claude: { label: 'Claude', prefix: 'sk-ant-', order: 0 },
-    gemini: { label: 'Gemini', prefix: 'AIza', order: 1 },
-    groq: { label: 'Groq', prefix: 'gsk_', order: 2 },
+    openrouter: { label: 'OpenRouter', prefix: 'sk-or-', order: 0 },
+    claude: { label: 'Claude', prefix: 'sk-ant-', order: 1 },
+    gemini: { label: 'Gemini', prefix: 'AIza', order: 2 },
+    groq: { label: 'Groq', prefix: 'gsk_', order: 3 },
 };
 const PROV_ORDER = Object.keys(PROV_META);
 const PROV_LABELS = { cache: 'Caché', cache_fallback: 'Caché (AI saturada)' };
