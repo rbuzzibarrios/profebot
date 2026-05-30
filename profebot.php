@@ -503,18 +503,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Provider registry
     $PROVIDERS = [
+            // Ollama Cloud (native /api/chat). Hosted open models via an API key, free tier.
+            // think:false keeps reasoning models from emitting thinking tokens that would
+            // break the strict 7-line parseQ format (and saves quota). Swap the model tag —
+            // catalog at https://ollama.com/search?c=cloud (use the base tag, no -cloud suffix).
+            'ollama' => [
+                    'env'   => 'OLLAMA_API_KEY',
+                    'build' => function ($data, $key) {
+                        $model = 'gpt-oss:20b';
+                        $messages = [];
+                        if (!empty($data['system'])) {
+                            $messages[] = ['role' => 'system', 'content' => $data['system']];
+                        }
+                        if (!empty($data['messages'])) {
+                            foreach ($data['messages'] as $m) {
+                                $messages[] = ['role' => $m['role'], 'content' => $m['content']];
+                            }
+                        }
+                        $body = ['model' => $model, 'messages' => $messages, 'stream' => false, 'think' => false];
+                        return [
+                                'url'     => 'https://ollama.com/api/chat',
+                                'headers' => ['Content-Type: application/json', 'Authorization: Bearer '.$key],
+                                'body'    => json_encode($body),
+                        ];
+                    },
+                    'parse' => function ($resp) {
+                        $d = json_decode($resp, true);
+                        $text = $d['message']['content'] ?? null;
+                        // Ollama returns {"error":"..."} (string) on failure.
+                        $err = isset($d['error']) ? (is_array($d['error']) ? ($d['error']['message'] ?? json_encode($d['error'])) : $d['error']) : null;
+                        $usage = (isset($d['prompt_eval_count']) || isset($d['eval_count']))
+                                ? ['prompt_tokens' => $d['prompt_eval_count'] ?? null, 'completion_tokens' => $d['eval_count'] ?? null]
+                                : null;
+                        return ['text' => $text, 'error' => $err, 'usage' => $usage];
+                    },
+            ],
             // OpenRouter (OpenAI-compatible). Listed first so it serves before the
             // direct Gemini call, which is geo-blocked from datacenter IPs (e.g. Render).
             // Free :free models bypass that block because OpenRouter calls the upstream,
-            // not our server. Swap the model string to try other free models — check the
-            // live list at https://openrouter.ai/api/v1/models (filter pricing.prompt=="0"),
-            // e.g. 'qwen/qwen3-next-80b-a3b-instruct:free'. Avoid reasoning models (R1):
-            // their thinking tokens break the strict 7-line parseQ format.
+            // not our server. The `models` array is OpenRouter's native fallback routing:
+            // it tries each in order and falls through when one is rate-limited/down — key
+            // for free models, whose shared upstream capacity 429s often. Edit the list from
+            // the live free catalog at https://openrouter.ai/api/v1/models (pricing.prompt=="0");
+            // use diverse upstreams. Avoid reasoning models (R1): their thinking tokens break
+            // the strict 7-line parseQ format.
             'openrouter' => [
                     'env'   => 'OPENROUTER_API_KEY',
                     'build' => function ($data, $key) {
-                        $model = 'qwen/qwen3-next-80b-a3b-instruct:free';
-                        $body = ['model' => $model, 'max_tokens' => 2048, 'messages' => []];
+                        $models = [
+                                'qwen/qwen3-next-80b-a3b-instruct:free',
+                                'deepseek/deepseek-v4-flash:free',
+                                'meta-llama/llama-3.3-70b-instruct:free',
+                        ];
+                        $body = ['models' => $models, 'max_tokens' => 2048, 'messages' => []];
                         if (!empty($data['system'])) {
                             $body['messages'][] = ['role' => 'system', 'content' => $data['system']];
                         }

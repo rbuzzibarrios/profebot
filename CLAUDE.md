@@ -45,7 +45,7 @@ Requirements: PHP 7.0+ with cURL extension, modern browser with Web Speech API s
 
 **Single-file monolith** — `profebot.php` contains everything:
 
-- **PHP backend (top):** Multi-provider API proxy with automatic fallback. Supports OpenRouter, Groq, Gemini, and Claude. Reads provider keys from POST body or env vars (`OPENROUTER_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`). Tries providers in client-specified order; falls back on 429/402/403/500/502/503 or cURL errors; stops on 400/401.
+- **PHP backend (top):** Multi-provider API proxy with automatic fallback. Supports Ollama Cloud, OpenRouter, Groq, Gemini, and Claude. Reads provider keys from POST body or env vars (`OLLAMA_API_KEY`, `OPENROUTER_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`). Tries providers in client-specified order; falls back on 429/402/403/500/502/503 or cURL errors; stops on 400/401.
 - **HTML (middle):** 5 screen states — s0 (setup), sMat (materials), sVoice (learning), sRep (report), sHist (history).
 - **CSS:** Custom variables, mobile-first (max-width 640px), child-friendly design with Google Fonts (Nunito, Baloo 2).
 - **JavaScript (bottom):** All app logic including API calls, question parsing, speech synthesis/recognition, session management.
@@ -119,7 +119,8 @@ HTTP client: Guzzle 7 (declared in `composer.json`).
 
 ## External Dependencies
 
-- OpenRouter API (`qwen/qwen3-next-80b-a3b-instruct:free` model, OpenAI-compatible) — primary provider; free models bypass Gemini's datacenter-IP geo-block. Swap model string in `$PROVIDERS['openrouter']['build']` (check live free list at `https://openrouter.ai/api/v1/models`).
+- Ollama Cloud (`gpt-oss:20b` model, native `/api/chat`) — primary provider; hosted open models via API key (free tier, light-usage quota). `think:false` keeps reasoning models from breaking the 7-line format. Swap model tag in `$PROVIDERS['ollama']['build']` (catalog at `https://ollama.com/search?c=cloud`, use base tag without `-cloud`).
+- OpenRouter API (OpenAI-compatible) — fallback provider; sends a `models` array of free models (qwen3-next-80b, deepseek-v4-flash, llama-3.3-70b) for native cross-model failover when one is rate-limited. Free models bypass Gemini's datacenter-IP geo-block. Edit the list in `$PROVIDERS['openrouter']['build']` (live free list at `https://openrouter.ai/api/v1/models`).
 - Groq API (`llama-3.3-70b-versatile` model) — fallback provider
 - Gemini API (`gemini-2.5-flash` model) — fallback provider (geo-blocked from datacenter IPs like Render; direct calls fail with HTTP 400 "User location is not supported")
 - Upstash Redis (REST API) — persistent question cache (optional, env-gated)

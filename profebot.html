@@ -38,6 +38,21 @@
         <div class="prov-section" id="provConfig">
             <div class="prov-title">🔑 Configurar Proveedores de IA</div>
 
+            <div class="prov-row" id="provRow_ollama">
+                <div class="prov-hdr" onclick="toggleProv('ollama')">
+                    <span>🦙 Ollama</span>
+                    <span class="prov-status" id="provSt_ollama">❌</span>
+                </div>
+                <div class="prov-body" id="provBody_ollama">
+                    <p>Obtené tu key en <a href="https://ollama.com/settings/keys" target="_blank"><strong>ollama.com/settings/keys</strong></a>
+                        → modelos cloud open (free tier).</p>
+                    <div class="api-row">
+                        <input class="api-inp" type="password" id="provInp_ollama" placeholder="API key de Ollama"/>
+                        <button class="api-save" onclick="saveProv('ollama')">Guardar</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="prov-row" id="provRow_openrouter">
                 <div class="prov-hdr" onclick="toggleProv('openrouter')">
                     <span>🌐 OpenRouter</span>
