@@ -552,6 +552,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Provider registry
     $PROVIDERS = [
+            // Ollama Cloud (native /api/chat). Hosted open models via an API key, free tier.
+            // think:false keeps reasoning models from emitting thinking tokens that would
+            // break the strict 7-line parseQ format (and saves quota). Swap the model tag —
+            // catalog at https://ollama.com/search?c=cloud (use the base tag, no -cloud suffix).
+            'ollama' => [
+                    'env'   => 'OLLAMA_API_KEY',
+                    'build' => function ($data, $key) {
+                        $model = 'gpt-oss:20b';
+                        $messages = [];
+                        if (!empty($data['system'])) {
+                            $messages[] = ['role' => 'system', 'content' => $data['system']];
+                        }
+                        if (!empty($data['messages'])) {
+                            foreach ($data['messages'] as $m) {
+                                $messages[] = ['role' => $m['role'], 'content' => $m['content']];
+                            }
+                        }
+                        $body = ['model' => $model, 'messages' => $messages, 'stream' => false, 'think' => false];
+                        return [
+                                'url'     => 'https://ollama.com/api/chat',
+                                'headers' => ['Content-Type: application/json', 'Authorization: Bearer '.$key],
+                                'body'    => json_encode($body),
+                        ];
+                    },
+                    'parse' => function ($resp) {
+                        $d = json_decode($resp, true);
+                        $text = $d['message']['content'] ?? null;
+                        // Ollama returns {"error":"..."} (string) on failure.
+                        $err = isset($d['error']) ? (is_array($d['error']) ? ($d['error']['message'] ?? json_encode($d['error'])) : $d['error']) : null;
+                        $usage = (isset($d['prompt_eval_count']) || isset($d['eval_count']))
+                                ? ['prompt_tokens' => $d['prompt_eval_count'] ?? null, 'completion_tokens' => $d['eval_count'] ?? null]
+                                : null;
+                        return ['text' => $text, 'error' => $err, 'usage' => $usage];
+                    },
+            ],
+            // OpenRouter (OpenAI-compatible). Listed first so it serves before the
+            // direct Gemini call, which is geo-blocked from datacenter IPs (e.g. Render).
+            // Free :free models bypass that block because OpenRouter calls the upstream,
+            // not our server. The `models` array is OpenRouter's native fallback routing:
+            // it tries each in order and falls through when one is rate-limited/down — key
+            // for free models, whose shared upstream capacity 429s often. Edit the list from
+            // the live free catalog at https://openrouter.ai/api/v1/models (pricing.prompt=="0");
+            // use diverse upstreams. Avoid reasoning models (R1): their thinking tokens break
+            // the strict 7-line parseQ format.
+            'openrouter' => [
+                    'env'   => 'OPENROUTER_API_KEY',
+                    'build' => function ($data, $key) {
+                        $models = [
+                                'qwen/qwen3-next-80b-a3b-instruct:free',
+                                'deepseek/deepseek-v4-flash:free',
+                                'meta-llama/llama-3.3-70b-instruct:free',
+                        ];
+                        $body = ['models' => $models, 'max_tokens' => 2048, 'messages' => []];
+                        if (!empty($data['system'])) {
+                            $body['messages'][] = ['role' => 'system', 'content' => $data['system']];
+                        }
+                        if (!empty($data['messages'])) {
+                            foreach ($data['messages'] as $m) {
+                                $body['messages'][] = ['role' => $m['role'], 'content' => $m['content']];
+                            }
+                        }
+                        return [
+                                'url'     => 'https://openrouter.ai/api/v1/chat/completions',
+                                'headers' => [
+                                        'Content-Type: application/json',
+                                        'Authorization: Bearer '.$key,
+                                        'X-Title: ProfeBot',
+                                ],
+                                'body'    => json_encode($body),
+                        ];
+                    },
+                    'parse' => function ($resp) {
+                        $d = json_decode($resp, true);
+                        $text = $d['choices'][0]['message']['content'] ?? null;
+                        $err = $d['error']['message'] ?? null;
+                        $usage = $d['usage'] ?? null;
+                        return ['text' => $text, 'error' => $err, 'usage' => $usage];
+                    },
+            ],
             'groq'   => [
                     'env'   => 'GROQ_API_KEY',
                     'build' => function ($data, $key) {
@@ -711,7 +790,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Fallback loop
     $errors = [];
-    $STOP_CODES = [400, 401]; // config errors, do not retry
+    $stopError = null; // remembers a config error (400/401) to surface if nothing else works
+    $STOP_CODES = [400, 401]; // config errors, do not retry the SAME provider
     $FALLBACK_CODES = [429, 402, 403, 500, 502, 503];
 
     header('Content-Type: application/json');
@@ -760,18 +840,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($httpCode >= 400) {
             $parsed = $prov['parse']($response);
             $msg = $parsed['error'] ?: "HTTP $httpCode";
+            $errors[] = "$pid: $msg";
             if (in_array($httpCode, $STOP_CODES)) {
-                pb_log_error('Provider config error (stop)', [
+                // Config error (bad key, unsupported request). Don't retry this provider,
+                // but keep trying the rest of the chain — another provider may still work.
+                // E.g. Gemini geo-block returns 400 ("User location is not supported") on
+                // Render even though Groq is fine. Remember it to surface a precise message
+                // only if every provider (and the cache) fails.
+                $stopError = ['code' => $httpCode, 'msg' => "$pid: $msg", 'provider' => $pid];
+                pb_log_warn('Provider config error (skip, try next)', [
                     'provider' => $pid,
                     'http_code' => $httpCode,
                     'message' => $msg,
                     'raw' => substr((string)$response, 0, 1000),
                 ]);
-                http_response_code($httpCode);
-                echo json_encode(['error' => "$pid: $msg", 'provider' => $pid]);
-                exit;
+                continue;
             }
-            $errors[] = "$pid: $msg";
             pb_log_warn('Provider HTTP error (fallback)', [
                 'provider' => $pid,
                 'http_code' => $httpCode,
@@ -881,6 +965,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     pb_log_error('Cache fallback empty', ['cache_key' => $fallbackCacheKey]);
+    // If a provider hit a config error (e.g. bad key with a single provider) and nothing
+    // else worked, surface that precise message instead of the generic "AI busy" one.
+    if ($stopError) {
+        http_response_code($stopError['code']);
+        echo json_encode(['error' => $stopError['msg'], 'provider' => $stopError['provider']]);
+        exit;
+    }
     http_response_code(502);
     echo json_encode([
         'code' => 'AI_BUSY_NO_CACHE',
