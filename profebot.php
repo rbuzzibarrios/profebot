@@ -506,12 +506,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // OpenRouter (OpenAI-compatible). Listed first so it serves before the
             // direct Gemini call, which is geo-blocked from datacenter IPs (e.g. Render).
             // Free :free models bypass that block because OpenRouter calls the upstream,
-            // not our server. Swap the model string to try other free models, e.g.
-            // 'google/gemini-2.0-flash-exp:free' or 'deepseek/deepseek-chat-v3-0324:free'.
+            // not our server. Swap the model string to try other free models — check the
+            // live list at https://openrouter.ai/api/v1/models (filter pricing.prompt=="0"),
+            // e.g. 'qwen/qwen3-next-80b-a3b-instruct:free'. Avoid reasoning models (R1):
+            // their thinking tokens break the strict 7-line parseQ format.
             'openrouter' => [
                     'env'   => 'OPENROUTER_API_KEY',
                     'build' => function ($data, $key) {
-                        $model = 'deepseek/deepseek-chat:free';
+                        $model = 'deepseek/deepseek-v4-flash:free';
                         $body = ['model' => $model, 'max_tokens' => 2048, 'messages' => []];
                         if (!empty($data['system'])) {
                             $body['messages'][] = ['role' => 'system', 'content' => $data['system']];
