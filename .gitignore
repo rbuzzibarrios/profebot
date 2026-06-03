@@ -6,6 +6,7 @@ config.php
 .idea/
 TODO.md
 vendor/
+.phpunit.result.cache
 
 # Local one-shot scripts (scratch tooling, not runtime)
 cubaeduca.py

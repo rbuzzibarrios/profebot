@@ -1043,6 +1043,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// Under CLI (PHPUnit) only function definitions are needed; skip HTML serving.
+// php -S uses the "cli-server" SAPI (not "cli"), so production is unaffected.
+if (PHP_SAPI === 'cli') {
+    return;
+}
+
 // ── GET → serve HTML ──
 $pb_version_js = htmlspecialchars(pb_version(), ENT_QUOTES, 'UTF-8');
 echo "<!-- ProfeBot ".$pb_version_js." -->\n";
