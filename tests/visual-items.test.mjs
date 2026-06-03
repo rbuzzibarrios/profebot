@@ -37,9 +37,9 @@ function checkTemplate(tplName, recount) {
   for (const diff of ['fácil', 'media', 'difícil']) {
     for (let i = 0; i < 200; i++) {
       const r = VI.TEMPLATES[tplName](diff);
-      assert.equal(r.options.length, 3, tplName + ' has 3 options');
-      assert.ok(new Set(r.options).size === 3, tplName + ' options unique');
-      assert.ok(r.correctIndex >= 0 && r.correctIndex < 3, tplName + ' correctIndex in range');
+      assert.equal(r.options.length, 2, tplName + ' has 2 options');
+      assert.ok(new Set(r.options).size === 2, tplName + ' options unique');
+      assert.ok(r.correctIndex >= 0 && r.correctIndex < 2, tplName + ' correctIndex in range');
       const truth = String(recount(r.scene));
       assert.equal(r.options[r.correctIndex], truth, tplName + ' answer == truth');
     }
@@ -78,31 +78,33 @@ test('countNotX answer equals shapes that are NOT the asked kind', () => {
   }
 });
 
-test('compareQty picks the more numerous color or "Iguales"', () => {
+test('compareQty picks the more numerous color (no tie, 2 options)', () => {
   for (const diff of ['fácil', 'media', 'difícil']) for (let i = 0; i < 300; i++) {
     const r = VI.TEMPLATES.compareQty(diff);
+    assert.equal(r.options.length, 2);
     const colorByAdj = { rojas: 'rojo', azules: 'azul', verdes: 'verde', amarillas: 'amarillo' };
     const m = r.question.match(/más figuras (\w+) o más (\w+)\?/);
     const a = colorByAdj[m[1]], b = colorByAdj[m[2]];
     const na = r.scene.shapes.filter(s => s.color === a).length;
     const nb = r.scene.shapes.filter(s => s.color === b).length;
-    const expect = na > nb ? 0 : nb > na ? 1 : 2;
-    assert.equal(r.correctIndex, expect);
+    assert.notEqual(na, nb);
+    assert.equal(r.correctIndex, na > nb ? 0 : 1);
   }
 });
-test('compareSize picks the more numerous size or "Iguales"', () => {
+test('compareSize picks the more numerous size (no tie, 2 options)', () => {
   for (const diff of ['fácil', 'media', 'difícil']) for (let i = 0; i < 300; i++) {
     const r = VI.TEMPLATES.compareSize(diff);
+    assert.equal(r.options.length, 2);
     const ng = r.scene.shapes.filter(s => s.size === 'grande').length;
     const np = r.scene.shapes.filter(s => s.size === 'pequeño').length;
-    const expect = ng > np ? 0 : np > ng ? 1 : 2;
-    assert.equal(r.correctIndex, expect);
+    assert.notEqual(ng, np);
+    assert.equal(r.correctIndex, ng > np ? 0 : 1);
   }
 });
 test('commonAttr fires only on uniform scenes and names the shared attribute', () => {
   for (let i = 0; i < 300; i++) {
     const r = VI.TEMPLATES.commonAttr('media');
-    assert.equal(r.options.length, 3);
+    assert.equal(r.options.length, 2);
     const truth = r.options[r.correctIndex];
     if (/color/.test(r.question)) {
       const colors = new Set(r.scene.shapes.map(s => s.color));
@@ -141,7 +143,8 @@ test('generateVisualItem returns a renderable, correct item', () => {
   for (let i = 0; i < 300; i++) {
     const q = VI.generateVisualItem({ subjKey: 'mat', obj: 'Agrupar objetos por su forma' }, 'media');
     assert.ok(q.svg.startsWith('<svg'));
-    assert.ok(['A', 'B', 'C'].includes(q.correct));
+    assert.ok(['A', 'B'].includes(q.correct));
+    assert.equal(Object.keys(q.opts).length, 2);
     assert.ok(q.opts[q.correct] && q.opts[q.correct].length > 0);
     assert.ok(q.question.length > 0 && q.explanation.length > 0);
   }

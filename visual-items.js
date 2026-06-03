@@ -63,19 +63,20 @@
 
   function adjColor(c) { return COLOR_ADJ_FEM[c]; }
 
-  // 3 unique numeric option strings incl. `correct`, plausible within [0, total].
+  // 2 unique numeric option strings incl. `correct`, plausible within [0, total].
+  // Preescolar uses 2 options (A/B): more than two is too hard to choose by ear.
   function numericOptions(correct, total, diff) {
     var spread = diff === 'difícil' ? 1 : 2;
     var seen = {}; seen[correct] = true;
     var opts = [correct], guard = 0;
-    while (opts.length < 3 && guard++ < 80) {
+    while (opts.length < 2 && guard++ < 80) {
       var delta = randInt(1, spread) * (Math.random() < 0.5 ? -1 : 1);
       var v = correct + delta;
       if (v < 0 || v > total + spread || seen[v]) continue;
       seen[v] = true; opts.push(v);
     }
     var fill = 0;
-    while (opts.length < 3) { if (!seen[fill]) { seen[fill] = true; opts.push(fill); } fill++; }
+    while (opts.length < 2) { if (!seen[fill]) { seen[fill] = true; opts.push(fill); } fill++; }
     return shuffle(opts.map(String));
   }
 
@@ -124,34 +125,34 @@
   function tplCompareQty(diff) {
     var max = maxTotalFor(diff);
     var two = shuffle(COLORS).slice(0, 2), cA = two[0], cB = two[1];
-    var nA = randInt(1, Math.max(1, max - 1));
+    var nA = randInt(1, Math.max(2, max - 1));
     var nB = randInt(1, Math.max(1, max - nA));
+    if (nB === nA) { nB = nA > 1 ? nA - 1 : nA + 1; } // 2 options, no tie
     var shapes = [], i;
     for (i = 0; i < nA; i++) shapes.push({ kind: pick(SHAPES), color: cA, size: pick(['grande', 'pequeño']) });
     for (i = 0; i < nB; i++) shapes.push({ kind: pick(SHAPES), color: cB, size: pick(['grande', 'pequeño']) });
     var scene = { shapes: shuffle(shapes) };
-    var options = ['Más ' + adjColor(cA), 'Más ' + adjColor(cB), 'Iguales'];
-    var correctIndex = nA > nB ? 0 : nB > nA ? 1 : 2;
+    var options = ['Más ' + adjColor(cA), 'Más ' + adjColor(cB)];
+    var correctIndex = nA > nB ? 0 : 1;
     var explanation = nA > nB ? ('Hay más ' + adjColor(cA) + ': ' + nA + ' contra ' + nB + '.')
-      : nB > nA ? ('Hay más ' + adjColor(cB) + ': ' + nB + ' contra ' + nA + '.')
-      : ('Hay ' + nA + ' de cada color.');
+      : ('Hay más ' + adjColor(cB) + ': ' + nB + ' contra ' + nA + '.');
     return { scene: scene, question: '¿Hay más figuras ' + adjColor(cA) + ' o más ' + adjColor(cB) + '?',
       options: options, correctIndex: correctIndex, explanation: explanation };
   }
 
   function tplCompareSize(diff) {
     var max = maxTotalFor(diff);
-    var nG = randInt(1, Math.max(1, max - 1));
+    var nG = randInt(1, Math.max(2, max - 1));
     var nP = randInt(1, Math.max(1, max - nG));
+    if (nP === nG) { nP = nG > 1 ? nG - 1 : nG + 1; } // 2 options, no tie
     var shapes = [], i;
     for (i = 0; i < nG; i++) shapes.push({ kind: pick(SHAPES), color: pick(COLORS), size: 'grande' });
     for (i = 0; i < nP; i++) shapes.push({ kind: pick(SHAPES), color: pick(COLORS), size: 'pequeño' });
     var scene = { shapes: shuffle(shapes) };
-    var options = ['Más grandes', 'Más pequeñas', 'Iguales'];
-    var correctIndex = nG > nP ? 0 : nP > nG ? 1 : 2;
+    var options = ['Más grandes', 'Más pequeñas'];
+    var correctIndex = nG > nP ? 0 : 1;
     var explanation = nG > nP ? ('Hay más grandes: ' + nG + ' contra ' + nP + '.')
-      : nP > nG ? ('Hay más pequeñas: ' + nP + ' contra ' + nG + '.')
-      : ('Hay ' + nG + ' de cada tamaño.');
+      : ('Hay más pequeñas: ' + nP + ' contra ' + nG + '.');
     return { scene: scene, question: '¿Hay más figuras grandes o más pequeñas?',
       options: options, correctIndex: correctIndex, explanation: explanation };
   }
@@ -161,15 +162,15 @@
     if (Math.random() < 0.5) {
       var color = pick(COLORS);
       var scene = makeScene(n, { colors: [color] });
-      var others = shuffle(COLORS.filter(function (c) { return c !== color; })).slice(0, 2);
-      var options = shuffle([color, others[0], others[1]].map(capit));
+      var others = shuffle(COLORS.filter(function (c) { return c !== color; })).slice(0, 1);
+      var options = shuffle([color, others[0]].map(capit));
       return { scene: scene, question: '¿De qué color son todas las figuras?', options: options,
         correctIndex: options.indexOf(capit(color)), explanation: 'Todas las figuras son ' + adjColor(color) + '.' };
     }
     var shape = pick(SHAPES);
     var scene2 = makeScene(n, { shapes: [shape] });
-    var others2 = shuffle(SHAPES.filter(function (s) { return s !== shape; })).slice(0, 2);
-    var options2 = shuffle([shape, others2[0], others2[1]].map(function (s) { return capit(SHAPE_SINGULAR[s]); }));
+    var others2 = shuffle(SHAPES.filter(function (s) { return s !== shape; })).slice(0, 1);
+    var options2 = shuffle([shape, others2[0]].map(function (s) { return capit(SHAPE_SINGULAR[s]); }));
     return { scene: scene2, question: '¿Qué forma son todas las figuras?', options: options2,
       correctIndex: options2.indexOf(capit(SHAPE_SINGULAR[shape])), explanation: 'Todas las figuras son ' + SHAPE_PLURAL[shape] + '.' };
   }
