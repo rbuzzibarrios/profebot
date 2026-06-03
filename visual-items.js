@@ -61,9 +61,76 @@
     return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">' + body + '</svg>';
   }
 
+  function adjColor(c) { return COLOR_ADJ_FEM[c]; }
+
+  // 3 unique numeric option strings incl. `correct`, plausible within [0, total].
+  function numericOptions(correct, total, diff) {
+    var spread = diff === 'difícil' ? 1 : 2;
+    var seen = {}; seen[correct] = true;
+    var opts = [correct], guard = 0;
+    while (opts.length < 3 && guard++ < 80) {
+      var delta = randInt(1, spread) * (Math.random() < 0.5 ? -1 : 1);
+      var v = correct + delta;
+      if (v < 0 || v > total + spread || seen[v]) continue;
+      seen[v] = true; opts.push(v);
+    }
+    var fill = 0;
+    while (opts.length < 3) { if (!seen[fill]) { seen[fill] = true; opts.push(fill); } fill++; }
+    return shuffle(opts.map(String));
+  }
+
+  function tplCountAll(diff) {
+    var n = randInt(2, maxTotalFor(diff));
+    var scene = makeScene(n);
+    var options = numericOptions(n, n, diff);
+    return { scene: scene, question: '¿Cuántas figuras hay?', options: options,
+      correctIndex: options.indexOf(String(n)), explanation: 'Hay ' + n + ' figuras en total.' };
+  }
+
+  function tplCountByColor(diff) {
+    var n = randInt(3, maxTotalFor(diff));
+    var two = shuffle(COLORS).slice(0, 2), target = two[0];
+    var scene = makeScene(n, { colors: two });
+    var c = count(scene, function (s) { return s.color === target; });
+    if (c === 0) { scene.shapes[0].color = target; c = 1; }
+    var options = numericOptions(c, n, diff);
+    return { scene: scene, question: '¿Cuántas figuras ' + adjColor(target) + ' hay?', options: options,
+      correctIndex: options.indexOf(String(c)), explanation: 'Hay ' + c + ' figuras ' + adjColor(target) + '.' };
+  }
+
+  function tplCountByShape(diff) {
+    var n = randInt(3, maxTotalFor(diff));
+    var two = shuffle(SHAPES).slice(0, 2), target = two[0];
+    var scene = makeScene(n, { shapes: two });
+    var c = count(scene, function (s) { return s.kind === target; });
+    if (c === 0) { scene.shapes[0].kind = target; c = 1; }
+    var options = numericOptions(c, n, diff);
+    return { scene: scene, question: '¿Cuántos ' + SHAPE_PLURAL[target] + ' hay?', options: options,
+      correctIndex: options.indexOf(String(c)), explanation: 'Hay ' + c + ' ' + SHAPE_PLURAL[target] + '.' };
+  }
+
+  function tplCountNotX(diff) {
+    var n = randInt(3, maxTotalFor(diff));
+    var two = shuffle(SHAPES).slice(0, 2), target = two[0];
+    var scene = makeScene(n, { shapes: two });
+    var c = count(scene, function (s) { return s.kind !== target; });
+    if (c === 0) { scene.shapes[0].kind = two[1]; c = 1; }
+    if (c === n) { scene.shapes[0].kind = target; c = n - 1; }
+    var options = numericOptions(c, n, diff);
+    return { scene: scene, question: '¿Cuántas figuras NO son ' + SHAPE_PLURAL[target] + '?', options: options,
+      correctIndex: options.indexOf(String(c)), explanation: c + ' figuras no son ' + SHAPE_PLURAL[target] + '.' };
+  }
+
+  var TEMPLATES = {
+    countAll: tplCountAll, countByColor: tplCountByColor,
+    countByShape: tplCountByShape, countNotX: tplCountNotX
+    // (compareQty, compareSize, commonAttr added in Task 4)
+  };
+
   var API = {
     makeScene: makeScene,
     renderSceneSVG: renderSceneSVG,
+    TEMPLATES: TEMPLATES,
     // (generateVisualItem, templatesFor added in later tasks)
     _internals: { count: count, randInt: randInt, pick: pick, shuffle: shuffle, capit: capit, maxTotalFor: maxTotalFor,
       COLORS: COLORS, COLOR_ADJ_FEM: COLOR_ADJ_FEM, SHAPES: SHAPES, SHAPE_SINGULAR: SHAPE_SINGULAR, SHAPE_PLURAL: SHAPE_PLURAL }
