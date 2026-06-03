@@ -904,20 +904,31 @@ function logCallStats(d) {
 
 // ── PARSE ──
 function parseQ(txt) {
-    // Model sometimes wraps response in markdown blocks or adds asterisks
-    txt = txt.replace(/```[a-z]*\n?/g, '').replace(/\*\*/g, '').trim();
+    // Strip reasoning wrapped in <think>...</think>, markdown fences, and asterisks
+    txt = txt.replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/```[a-z]*\n?/g, '').replace(/\*\*/g, '').trim();
+    // Reasoning models (e.g. gpt-oss) echo the template then emit the real answer last.
+    // Parse the final PREGUNTA block, not the first — the first may be leaked chain-of-thought.
+    const lastIdx = txt.lastIndexOf('PREGUNTA:');
+    if (lastIdx > 0 && /\n[A-D]\)/.test(txt.slice(lastIdx))) txt = txt.slice(lastIdx);
     // Optional IMAGEN: <ruta> line, must reference assets/img/...
     const im = txt.match(/^IMAGEN:\s*(assets\/img\/[^\s\n]+)/im);
     const qm = txt.match(/PREGUNTA:\s*(.+?)(?=\n[A-D]\))/is);
     const am = txt.match(/^A\)\s*(.+)/im), bm = txt.match(/^B\)\s*(.+)/im);
     const cm = txt.match(/^C\)\s*(.+)/im), dm = txt.match(/^D\)\s*(.+)/im);
-    const cr = txt.match(/CORRECTA:\s*([ABCD])/i), ex = txt.match(/EXPLICACI[OÓ]N:\s*(.+)/i);
+    // CORRECTA must be a standalone letter on its own line — rejects leaked prose like
+    // "CORRECTA: choose A or B randomly" (which used to match the "c" in "choose").
+    const cr = txt.match(/^CORRECTA:\s*([ABCD])\s*$/im), ex = txt.match(/EXPLICACI[OÓ]N:\s*(.+)/i);
     if (!qm || !am || !bm || !cr) return null;
+    const opts = { A: am[1].trim(), B: bm[1].trim(), C: cm ? cm[1].trim() : '', D: dm ? dm[1].trim() : '' };
+    const correct = cr[1].toUpperCase();
+    // The correct letter must point at a real, non-empty option
+    if (!opts[correct]) return null;
     return {
         question: qm[1].trim(),
         image: im ? im[1].trim() : '',
-        opts: { A: am[1].trim(), B: bm[1].trim(), C: cm ? cm[1].trim() : '', D: dm ? dm[1].trim() : '' },
-        correct: cr[1].toUpperCase(),
+        opts,
+        correct,
         explanation: ex ? ex[1].trim() : ''
     };
 }

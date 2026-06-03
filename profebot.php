@@ -435,6 +435,45 @@ function cache_set_key($key, array $items)
     return cache_write_file($cache);
 }
 
+// Validates a cached question's shape. Rejects leaked chain-of-thought / malformed
+// entries (e.g. a reasoning model echoing the template) so poison never persists and
+// existing poison is dropped on read. $key prefix enforces grade-specific option arity.
+function pb_valid_question($q, $key = '')
+{
+    if (!is_array($q)) {
+        return false;
+    }
+    $question = isset($q['question']) ? trim((string)$q['question']) : '';
+    if ($question === '' || mb_strlen($question) > 200) {
+        return false;
+    }
+    $opts = (isset($q['opts']) && is_array($q['opts'])) ? $q['opts'] : [];
+    $present = [];
+    foreach (['A', 'B', 'C', 'D'] as $L) {
+        if (isset($opts[$L]) && trim((string)$opts[$L]) !== '') {
+            $present[] = $L;
+        }
+    }
+    // Need at least A and B, and the correct letter must point at a real option.
+    if (!in_array('A', $present, true) || !in_array('B', $present, true)) {
+        return false;
+    }
+    $cor = isset($q['correct']) ? strtoupper(trim((string)$q['correct'])) : '';
+    if (!in_array($cor, $present, true)) {
+        return false;
+    }
+    // Format markers leaking into the visible fields signal echoed template / reasoning.
+    $blob = $question.' '.(isset($q['explanation']) ? (string)$q['explanation'] : '');
+    if (preg_match('/\b(PREGUNTA|CORRECTA|EXPLICACI[OÓ]N)\s*:/u', $blob)) {
+        return false;
+    }
+    // Preescolar questions are 2-option by design (A/B only).
+    if (strpos($key, 'preesc') === 0 && (in_array('C', $present, true) || in_array('D', $present, true))) {
+        return false;
+    }
+    return true;
+}
+
 // Returns [key => items[]] for cache keys starting with the given prefix.
 // Used by the all-providers-failed fallback path for progressive widening.
 function cache_scan_prefix($prefix)
@@ -501,6 +540,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $key = isset($data['cache_key']) ? $data['cache_key'] : '';
             $exclude = isset($data['exclude']) ? $data['exclude'] : [];
             $items = cache_get_key($key);
+            // Lazy-heal: drop any poisoned/malformed entries and persist the cleaned list
+            // so existing bad cache (e.g. leaked reasoning) self-purges on read.
+            $clean = array_values(array_filter($items, function ($q) use ($key) {
+                return pb_valid_question($q, $key);
+            }));
+            if (count($clean) !== count($items)) {
+                cache_set_key($key, $clean);
+                $items = $clean;
+            }
             // Filter out already-asked questions
             $available = array_values(array_filter($items, function ($q) use ($exclude) {
                 return !in_array($q['question'], $exclude);
@@ -536,6 +584,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $question = isset($data['question']) ? $data['question'] : null;
             if (!$key || !$question) {
                 echo json_encode(['saved' => false, 'error' => 'missing data']);
+                exit;
+            }
+            // Reject malformed / leaked-reasoning questions so poison never persists.
+            if (!pb_valid_question($question, $key)) {
+                pb_log_warn('cache_save rejected invalid question', ['key' => $key]);
+                echo json_encode(['saved' => false, 'error' => 'invalid question']);
                 exit;
             }
             $items = cache_get_key($key);
@@ -987,6 +1041,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type');
     exit;
+}
+
+// Under CLI (PHPUnit) only function definitions are needed; skip HTML serving.
+// php -S uses the "cli-server" SAPI (not "cli"), so production is unaffected.
+if (PHP_SAPI === 'cli') {
+    return;
 }
 
 // ── GET → serve HTML ──
