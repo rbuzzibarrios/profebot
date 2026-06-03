@@ -77,3 +77,43 @@ test('countNotX answer equals shapes that are NOT the asked kind', () => {
     assert.equal(r.options[r.correctIndex], String(truth));
   }
 });
+
+test('compareQty picks the more numerous color or "Iguales"', () => {
+  for (const diff of ['fácil', 'media', 'difícil']) for (let i = 0; i < 300; i++) {
+    const r = VI.TEMPLATES.compareQty(diff);
+    const colorByAdj = { rojas: 'rojo', azules: 'azul', verdes: 'verde', amarillas: 'amarillo' };
+    const m = r.question.match(/más figuras (\w+) o más (\w+)\?/);
+    const a = colorByAdj[m[1]], b = colorByAdj[m[2]];
+    const na = r.scene.shapes.filter(s => s.color === a).length;
+    const nb = r.scene.shapes.filter(s => s.color === b).length;
+    const expect = na > nb ? 0 : nb > na ? 1 : 2;
+    assert.equal(r.correctIndex, expect);
+  }
+});
+test('compareSize picks the more numerous size or "Iguales"', () => {
+  for (const diff of ['fácil', 'media', 'difícil']) for (let i = 0; i < 300; i++) {
+    const r = VI.TEMPLATES.compareSize(diff);
+    const ng = r.scene.shapes.filter(s => s.size === 'grande').length;
+    const np = r.scene.shapes.filter(s => s.size === 'pequeño').length;
+    const expect = ng > np ? 0 : np > ng ? 1 : 2;
+    assert.equal(r.correctIndex, expect);
+  }
+});
+test('commonAttr fires only on uniform scenes and names the shared attribute', () => {
+  for (let i = 0; i < 300; i++) {
+    const r = VI.TEMPLATES.commonAttr('media');
+    assert.equal(r.options.length, 3);
+    const truth = r.options[r.correctIndex];
+    if (/color/.test(r.question)) {
+      const colors = new Set(r.scene.shapes.map(s => s.color));
+      assert.equal(colors.size, 1);
+      const adj = { rojo: 'Rojo', azul: 'Azul', verde: 'Verde', amarillo: 'Amarillo' };
+      assert.equal(truth, adj[[...colors][0]]);
+    } else {
+      const kinds = new Set(r.scene.shapes.map(s => s.kind));
+      assert.equal(kinds.size, 1);
+      const sing = { circle: 'Círculo', square: 'Cuadrado', triangle: 'Triángulo' };
+      assert.equal(truth, sing[[...kinds][0]]);
+    }
+  }
+});

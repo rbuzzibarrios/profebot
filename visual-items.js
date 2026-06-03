@@ -121,10 +121,63 @@
       correctIndex: options.indexOf(String(c)), explanation: c + ' figuras no son ' + SHAPE_PLURAL[target] + '.' };
   }
 
+  function tplCompareQty(diff) {
+    var max = maxTotalFor(diff);
+    var two = shuffle(COLORS).slice(0, 2), cA = two[0], cB = two[1];
+    var nA = randInt(1, Math.max(1, max - 1));
+    var nB = randInt(1, Math.max(1, max - nA));
+    var shapes = [], i;
+    for (i = 0; i < nA; i++) shapes.push({ kind: pick(SHAPES), color: cA, size: pick(['grande', 'pequeño']) });
+    for (i = 0; i < nB; i++) shapes.push({ kind: pick(SHAPES), color: cB, size: pick(['grande', 'pequeño']) });
+    var scene = { shapes: shuffle(shapes) };
+    var options = ['Más ' + adjColor(cA), 'Más ' + adjColor(cB), 'Iguales'];
+    var correctIndex = nA > nB ? 0 : nB > nA ? 1 : 2;
+    var explanation = nA > nB ? ('Hay más ' + adjColor(cA) + ': ' + nA + ' contra ' + nB + '.')
+      : nB > nA ? ('Hay más ' + adjColor(cB) + ': ' + nB + ' contra ' + nA + '.')
+      : ('Hay ' + nA + ' de cada color.');
+    return { scene: scene, question: '¿Hay más figuras ' + adjColor(cA) + ' o más ' + adjColor(cB) + '?',
+      options: options, correctIndex: correctIndex, explanation: explanation };
+  }
+
+  function tplCompareSize(diff) {
+    var max = maxTotalFor(diff);
+    var nG = randInt(1, Math.max(1, max - 1));
+    var nP = randInt(1, Math.max(1, max - nG));
+    var shapes = [], i;
+    for (i = 0; i < nG; i++) shapes.push({ kind: pick(SHAPES), color: pick(COLORS), size: 'grande' });
+    for (i = 0; i < nP; i++) shapes.push({ kind: pick(SHAPES), color: pick(COLORS), size: 'pequeño' });
+    var scene = { shapes: shuffle(shapes) };
+    var options = ['Más grandes', 'Más pequeñas', 'Iguales'];
+    var correctIndex = nG > nP ? 0 : nP > nG ? 1 : 2;
+    var explanation = nG > nP ? ('Hay más grandes: ' + nG + ' contra ' + nP + '.')
+      : nP > nG ? ('Hay más pequeñas: ' + nP + ' contra ' + nG + '.')
+      : ('Hay ' + nG + ' de cada tamaño.');
+    return { scene: scene, question: '¿Hay más figuras grandes o más pequeñas?',
+      options: options, correctIndex: correctIndex, explanation: explanation };
+  }
+
+  function tplCommonAttr(diff) {
+    var n = randInt(3, maxTotalFor(diff));
+    if (Math.random() < 0.5) {
+      var color = pick(COLORS);
+      var scene = makeScene(n, { colors: [color] });
+      var others = shuffle(COLORS.filter(function (c) { return c !== color; })).slice(0, 2);
+      var options = shuffle([color, others[0], others[1]].map(capit));
+      return { scene: scene, question: '¿De qué color son todas las figuras?', options: options,
+        correctIndex: options.indexOf(capit(color)), explanation: 'Todas las figuras son ' + adjColor(color) + '.' };
+    }
+    var shape = pick(SHAPES);
+    var scene2 = makeScene(n, { shapes: [shape] });
+    var others2 = shuffle(SHAPES.filter(function (s) { return s !== shape; })).slice(0, 2);
+    var options2 = shuffle([shape, others2[0], others2[1]].map(function (s) { return capit(SHAPE_SINGULAR[s]); }));
+    return { scene: scene2, question: '¿Qué forma son todas las figuras?', options: options2,
+      correctIndex: options2.indexOf(capit(SHAPE_SINGULAR[shape])), explanation: 'Todas las figuras son ' + SHAPE_PLURAL[shape] + '.' };
+  }
+
   var TEMPLATES = {
     countAll: tplCountAll, countByColor: tplCountByColor,
-    countByShape: tplCountByShape, countNotX: tplCountNotX
-    // (compareQty, compareSize, commonAttr added in Task 4)
+    countByShape: tplCountByShape, countNotX: tplCountNotX,
+    compareQty: tplCompareQty, compareSize: tplCompareSize, commonAttr: tplCommonAttr
   };
 
   var API = {
