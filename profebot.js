@@ -172,10 +172,11 @@ const PROV_META = {
     claude: { label: 'Claude', prefix: 'sk-ant-', order: 2 },
     gemini: { label: 'Gemini', prefix: 'AIza', order: 3 },
     groq: { label: 'Groq', prefix: 'gsk_', order: 4 },
-    local: { label: 'Actividad' },
 };
 const PROV_ORDER = Object.keys(PROV_META);
-const PROV_LABELS = { cache: 'Caché', cache_fallback: 'Caché (AI saturada)' };
+// Non-provider badge labels (not real API providers, so kept out of PROV_META /
+// PROV_ORDER which drive the provider config UI). 'local' = locally-generated item.
+const PROV_LABELS = { cache: 'Caché', cache_fallback: 'Caché (AI saturada)', local: 'Actividad' };
 
 function getProviderKeys() {
     try {
