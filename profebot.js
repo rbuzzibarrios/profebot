@@ -174,7 +174,9 @@ const PROV_META = {
     groq: { label: 'Groq', prefix: 'gsk_', order: 4 },
 };
 const PROV_ORDER = Object.keys(PROV_META);
-const PROV_LABELS = { cache: 'Caché', cache_fallback: 'Caché (AI saturada)' };
+// Non-provider badge labels (not real API providers, so kept out of PROV_META /
+// PROV_ORDER which drive the provider config UI). 'local' = locally-generated item.
+const PROV_LABELS = { cache: 'Caché', cache_fallback: 'Caché (AI saturada)', local: 'Actividad' };
 
 function getProviderKeys() {
     try {
@@ -1015,6 +1017,26 @@ async function loadQ() {
     if (!obj) return;
     const realDiff = getRealDiff();
     const cacheKey = _grade + '::' + obj.k + '::' + realDiff;
+    // Locally-generated visual items (preescolar Matemática) bypass cache + AI:
+    // we render an SVG scene whose answer we compute, so it's always correct and
+    // never depends on an unseen image.
+    if (_grade === 'preesc' && typeof VisualItems !== 'undefined' && VisualItems.templatesFor(obj)) {
+        const vq = VisualItems.generateVisualItem(obj, realDiff);
+        if (vq) {
+            stopAll();
+            lastProvider = 'local';
+            vq.objText = obj.obj;
+            vq.subjLabel = obj.subj;
+            vq.chosen = null;
+            vq.color = obj.color;
+            sessQs.push(vq);
+            sessAsked.push(vq.question);
+            currentQ = vq;
+            renderQ(vq);
+            readQuestion(vq);
+            return;
+        }
+    }
     try {
         // Try cache first
         let q = null;
@@ -1090,8 +1112,9 @@ function renderQ(q) {
     // Only render image if path matches expected prefix (defense in depth — backend already restricts).
     const safeImg = q.image && /^assets\/img\/[\w\-/.]+\.(png|jpe?g|svg|webp)$/i.test(q.image) ? q.image : '';
     const imgHtml = safeImg ? `<img class="qimg" src="${esc(safeImg)}" alt="" onerror="this.style.display='none'">` : '';
+    const visualHtml = q.svg ? `<div class="qsvg">${q.svg}</div>` : imgHtml;
     document.getElementById('vContent').innerHTML = `
-    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div>${imgHtml}<br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para quien te acompaña: ' + esc(q.warning) + '</div>' : ''}</div>
+    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div>${visualHtml}<br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para quien te acompaña: ' + esc(q.warning) + '</div>' : ''}</div>
     <div class="opts">${letters.map(l => `<button class="opt" data-l="${l}" onclick="chooseAns('${l}')" id="opt${l}"><span class="oltr">${l}</span><span>${esc(q.opts[l])}</span></button>`).join('')}</div>
     <div class="vfeedback" id="vfb"></div>
     <div class="vexpl" id="vex"></div>
