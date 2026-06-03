@@ -290,6 +290,10 @@ function ttsClean(txt) {
         .replace(/(sonidos?\s+)?\/([a-zñ]{1,3})\//gi, (_, pre, s) => (pre || ' el sonido ') + s.toUpperCase() + ' ')
         // "Z/C", "B/V", "G/GU", "K/QU" → "zeta o ce" (both sides ALL-CAPS letter groups)
         .replace(/\b([A-ZÑ]{1,2})\/([A-ZÑ]{1,3})\b/g, (_, a, b) => sayGroup(a) + ' o ' + sayGroup(b))
+        // Single-letter labels before a colon ("Caja A:", "Caja B:") glue to the
+        // preceding word in TTS ("caja"+"a" → "cajaa"). Spell them ("letra A") to
+        // break the glue. Only A–D before ":" so it can't hit a sentence-leading "A".
+        .replace(/\b([A-D]):/g, 'letra $1:')
         .replace(/\s{2,}/g, ' ')
         .trim();
 }
@@ -802,7 +806,8 @@ CORRECTA: B
 EXPLICACION: El círculo es redondo.
 
 PROHIBIDO: palabras abstractas, conceptos que un niño de 5 años no conoce, preguntas que necesiten ver imágenes.
-SONIDOS: escribe los sonidos como "el sonido S", NUNCA con barras tipo "/s/". Nombra las letras por su nombre ("la letra ce"), nunca como "Z/C". El niño ESCUCHA, no lee.${buildCtx(obj.subjKey)}`;
+SONIDOS: escribe los sonidos como "el sonido S", NUNCA con barras tipo "/s/". Nombra las letras por su nombre ("la letra ce"), nunca como "Z/C". El niño ESCUCHA, no lee.
+ETIQUETAS: NO uses etiquetas de una sola letra como "Caja A" o "Grupo B" (suenan pegadas al leerlas). Nombra los grupos con palabras: "la primera caja", "la segunda caja", "la caja de la izquierda", "el grupo de Ana".${buildCtx(obj.subjKey)}`;
     }
     return `Eres un generador de preguntas de múltiple opción para ${g.label} (niños ${g.age}), currículo cubano.
 Materia: ${obj.subj}. Unidad: "${obj.unit}".
