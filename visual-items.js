@@ -180,11 +180,44 @@
     compareQty: tplCompareQty, compareSize: tplCompareSize, commonAttr: tplCommonAttr
   };
 
+  // Maps an objective (by its Spanish text) to the templates that fit it.
+  // Text-based (not index-based) so it survives curriculum reordering.
+  function templatesFor(obj) {
+    if (!obj || obj.subjKey !== 'mat') return null;
+    var t = (obj.obj || '').toLowerCase();
+    if (/por su color/.test(t)) return ['countByColor', 'commonAttr'];
+    if (/por su forma/.test(t)) return ['countByShape', 'commonAttr'];
+    if (/por su tama/.test(t)) return ['compareSize'];
+    if (/característica común|caracteristica comun/.test(t)) return ['commonAttr'];
+    if (/elemento que sobra/.test(t)) return ['countNotX'];
+    if (/igual cantidad|más que|menos que|comparar cantidad/.test(t)) return ['compareQty'];
+    if (/contar objetos hasta/.test(t)) return ['countAll', 'countByColor'];
+    return null;
+  }
+
+  // Pick a template for the objective + difficulty, build the item, map options
+  // to A/B/C letters. Returns null if the objective is not locally generable.
+  function generateVisualItem(obj, diff) {
+    var ids = templatesFor(obj);
+    if (!ids) return null;
+    var r = TEMPLATES[pick(ids)](diff || 'media');
+    var letters = ['A', 'B', 'C', 'D'], opts = {};
+    for (var i = 0; i < r.options.length; i++) opts[letters[i]] = r.options[i];
+    return {
+      question: r.question,
+      svg: renderSceneSVG(r.scene),
+      opts: opts,
+      correct: letters[r.correctIndex],
+      explanation: r.explanation
+    };
+  }
+
   var API = {
     makeScene: makeScene,
     renderSceneSVG: renderSceneSVG,
     TEMPLATES: TEMPLATES,
-    // (generateVisualItem, templatesFor added in later tasks)
+    templatesFor: templatesFor,
+    generateVisualItem: generateVisualItem,
     _internals: { count: count, randInt: randInt, pick: pick, shuffle: shuffle, capit: capit, maxTotalFor: maxTotalFor,
       COLORS: COLORS, COLOR_ADJ_FEM: COLOR_ADJ_FEM, SHAPES: SHAPES, SHAPE_SINGULAR: SHAPE_SINGULAR, SHAPE_PLURAL: SHAPE_PLURAL }
   };

@@ -117,3 +117,33 @@ test('commonAttr fires only on uniform scenes and names the shared attribute', (
     }
   }
 });
+
+test('templatesFor maps preescolar mat objectives, null otherwise', () => {
+  const objs = {
+    'Agrupar objetos por su color': ['countByColor', 'commonAttr'],
+    'Agrupar objetos por su forma': ['countByShape', 'commonAttr'],
+    'Agrupar objetos por su tamaño': ['compareSize'],
+    'Reconocer la característica común de un conjunto': ['commonAttr'],
+    'Identificar el elemento que sobra en un conjunto': ['countNotX'],
+    'Comparar cantidades: más que / menos que': ['compareQty'],
+    'Reconocer conjuntos con igual cantidad': ['compareQty'],
+    'Contar objetos hasta 5': ['countAll', 'countByColor'],
+    'Contar objetos hasta 10': ['countAll', 'countByColor']
+  };
+  for (const [text, ids] of Object.entries(objs)) {
+    assert.deepEqual(VI.templatesFor({ subjKey: 'mat', obj: text }), ids);
+  }
+  assert.equal(VI.templatesFor({ subjKey: 'len', obj: 'Agrupar objetos por su color' }), null);
+  assert.equal(VI.templatesFor({ subjKey: 'mat', obj: 'Identificar el sonido inicial' }), null);
+});
+
+test('generateVisualItem returns a renderable, correct item', () => {
+  for (let i = 0; i < 300; i++) {
+    const q = VI.generateVisualItem({ subjKey: 'mat', obj: 'Agrupar objetos por su forma' }, 'media');
+    assert.ok(q.svg.startsWith('<svg'));
+    assert.ok(['A', 'B', 'C'].includes(q.correct));
+    assert.ok(q.opts[q.correct] && q.opts[q.correct].length > 0);
+    assert.ok(q.question.length > 0 && q.explanation.length > 0);
+  }
+  assert.equal(VI.generateVisualItem({ subjKey: 'len', obj: 'x' }, 'media'), null);
+});
