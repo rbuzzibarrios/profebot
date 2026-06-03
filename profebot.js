@@ -933,6 +933,49 @@ function parseQ(txt) {
     };
 }
 
+// Local correctness guard for deterministically-checkable phonetic questions.
+// The AI sometimes mislabels CORRECTA (e.g. asks "¿Con qué sonido empieza perrito?",
+// lists "A) sonido p / B) sonido t", explains it's 'p', yet marks CORRECTA: B).
+// "Initial/final sound of word X" has a single objective answer: the first/last sound
+// of X. We can verify it locally and auto-fix the CORRECTA letter instead of wasting a
+// regeneration. Pure helper, no DOM. Returns the (possibly corrected) question object.
+function reconcilePhoneticAnswer(q, obj) {
+    if (!q || !obj || !obj.obj) return q;
+    // Only fire for the "Identificar el sonido inicial/final de una palabra" objective.
+    if (!/sonido (inicial|final) de una palabra/i.test(obj.obj)) return q;
+    // Only handle the deterministic question shape; capture position word + target word.
+    const m = (q.question || '').match(/¿con qué sonido (empieza|termina) la palabra\s+([a-záéíóúñü]+)/i);
+    if (!m) return q;
+    const isFinal = /termina/i.test(m[1]);
+    let word = m[2].toLowerCase().replace(/[^a-záéíóúñü]/g, '');
+    if (!word) return q;
+    // Compute the target sound = first/last letter, with the only trivial digraphs special-cased.
+    // (ch/ll/rr/qu/gu behave as one sound; rr never appears word-initially, so it's final-only.)
+    let sound;
+    if (isFinal) {
+        sound = word.slice(-1);
+    } else {
+        const two = word.slice(0, 2);
+        sound = (two === 'ch' || two === 'll' || two === 'qu' || two === 'gu') ? two : word[0];
+    }
+    // Strip accents on the computed sound so "á" matches an "a" option, etc.
+    const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const target = norm(sound);
+    // Find the option(s) whose text names that sound: "sonido p", "letra p", or a lone "p".
+    const matches = ['A', 'B', 'C', 'D'].filter(l => {
+        const t = q.opts && q.opts[l];
+        if (!t) return false;
+        const cleaned = norm(t).replace(/\b(sonido|letra|el|la)\b/g, ' ').trim();
+        // Accept exact single-token match (e.g. "p" or "ch") to avoid false hits on prose.
+        return cleaned === target;
+    });
+    // Auto-fix only when exactly one option matches and it disagrees with the AI's label.
+    if (matches.length === 1 && matches[0] !== q.correct) {
+        q.correct = matches[0];
+    }
+    return q;
+}
+
 function pickObj() {
     const all = getActiveObjs();
     if (!all.length) return null;
@@ -1013,6 +1056,9 @@ async function loadQ() {
             q.warning = fallbackWarning;
             q.warningKid = fallbackWarningKid;
         }
+        // Auto-correct AI CORRECTA mislabels for deterministic initial/final-sound questions.
+        // Applied to both freshly parsed AI questions and cached ones (both converge here).
+        reconcilePhoneticAnswer(q, obj);
         q.objText = obj.obj;
         q.subjLabel = obj.subj;
         q.chosen = null;
