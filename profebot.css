@@ -1561,3 +1561,7 @@ body {
     margin: 0 0 6px;
     font-family: 'Nunito', sans-serif;
 }
+
+.qsvg { max-width: 360px; margin: 10px auto; }
+.qsvg svg { display: block; width: 100%; height: auto; }
+
