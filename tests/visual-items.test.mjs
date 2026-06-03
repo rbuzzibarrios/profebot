@@ -22,3 +22,12 @@ test('makeScene honors pool constraints', () => {
   const scene = VI.makeScene(8, { colors: ['rojo'], shapes: ['circle'] });
   assert.ok(scene.shapes.every(s => s.color === 'rojo' && s.kind === 'circle'));
 });
+
+test('renderSceneSVG returns an <svg> string with one node per shape', () => {
+  const scene = VI.makeScene(6);
+  const svg = VI.renderSceneSVG(scene);
+  assert.match(svg, /^<svg /);
+  assert.match(svg, /<\/svg>$/);
+  const nodes = (svg.match(/<(circle|rect|polygon)\b/g) || []).length;
+  assert.equal(nodes, 6);
+});
