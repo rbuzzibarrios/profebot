@@ -269,13 +269,38 @@ function getBestVoice() {
     return voices.find(v => v.lang.startsWith('es')) || null;
 }
 
+// Make text safe for the Web Speech API. Phonetic notation like "/s/" is read aloud
+// as "por segundo" (slash → "por", s → "segundo"), and letter pairs like "Z/C" as
+// "Z dividido C". Children listen rather than read, so we speak these as sounds/letters.
+function ttsClean(txt) {
+    if (!txt) return txt;
+    // Spanish letter names so TTS says the LETTER, not a division/phoneme symbol.
+    const letterName = {
+        A: 'a', B: 'be', C: 'ce', D: 'de', E: 'e', F: 'efe', G: 'ge', H: 'hache', I: 'i',
+        J: 'jota', K: 'ka', L: 'ele', M: 'eme', N: 'ene', Ñ: 'eñe', O: 'o', P: 'pe', Q: 'cu',
+        R: 'erre', S: 'ese', T: 'te', U: 'u', V: 'uve', W: 'doble uve', X: 'equis', Y: 'ye', Z: 'zeta'
+    };
+    const sayGroup = g => g.length === 1
+        ? (letterName[g] || g)
+        : g.split('').map(c => letterName[c] || c).join(' ');
+    return txt
+        // "/s/", "/m/", "/rr/" → "el sonido S" (1-3 letters wrapped in slashes only,
+        // so dates 12/05, fractions 1/2 and URLs are left untouched). If "sonido"
+        // already precedes, keep just the letter to avoid "el sonido el sonido S".
+        .replace(/(sonidos?\s+)?\/([a-zñ]{1,3})\//gi, (_, pre, s) => (pre || ' el sonido ') + s.toUpperCase() + ' ')
+        // "Z/C", "B/V", "G/GU", "K/QU" → "zeta o ce" (both sides ALL-CAPS letter groups)
+        .replace(/\b([A-ZÑ]{1,2})\/([A-ZÑ]{1,3})\b/g, (_, a, b) => sayGroup(a) + ' o ' + sayGroup(b))
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
 function speak(txt, onEnd) {
     if (!useTTS || !txt) {
         if (onEnd) onEnd();
         return;
     }
     synth.cancel();
-    const u = new SpeechSynthesisUtterance(txt);
+    const u = new SpeechSynthesisUtterance(ttsClean(txt));
     const v = getBestVoice();
     if (v) u.voice = v;
     u.lang = 'es-ES';
@@ -776,7 +801,8 @@ B) círculo
 CORRECTA: B
 EXPLICACION: El círculo es redondo.
 
-PROHIBIDO: palabras abstractas, conceptos que un niño de 5 años no conoce, preguntas que necesiten ver imágenes.${buildCtx(obj.subjKey)}`;
+PROHIBIDO: palabras abstractas, conceptos que un niño de 5 años no conoce, preguntas que necesiten ver imágenes.
+SONIDOS: escribe los sonidos como "el sonido S", NUNCA con barras tipo "/s/". Nombra las letras por su nombre ("la letra ce"), nunca como "Z/C". El niño ESCUCHA, no lee.${buildCtx(obj.subjKey)}`;
     }
     return `Eres un generador de preguntas de múltiple opción para ${g.label} (niños ${g.age}), currículo cubano.
 Materia: ${obj.subj}. Unidad: "${obj.unit}".
@@ -807,7 +833,8 @@ EXPLICACION: 2 más 3 es 5.
 
 VERIFICA antes de responder: la letra en CORRECTA debe coincidir con la opción que tiene la respuesta verdadera.
 
-PROHIBIDO: preguntas que necesiten ver una imagen, dibujo, ilustración, figura, lámina o tabla. Todo debe entenderse SOLO con texto. Lenguaje muy simple, español.${buildCtx(obj.subjKey)}`;
+PROHIBIDO: preguntas que necesiten ver una imagen, dibujo, ilustración, figura, lámina o tabla. Todo debe entenderse SOLO con texto. Lenguaje muy simple, español.
+SONIDOS: escribe los sonidos como "el sonido S", NUNCA con barras tipo "/s/". Nombra las letras por su nombre ("la letra ce"), nunca como "Z/C". El niño ESCUCHA, no lee.${buildCtx(obj.subjKey)}`;
 }
 
 function getUMsg(obj, n, tot, prev) {
