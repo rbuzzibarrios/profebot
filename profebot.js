@@ -174,7 +174,9 @@ const PROV_META = {
     groq: { label: 'Groq', prefix: 'gsk_', order: 4 },
 };
 const PROV_ORDER = Object.keys(PROV_META);
-const PROV_LABELS = { cache: 'Caché', cache_fallback: 'Caché (AI saturada)' };
+// Non-provider badge labels (not real API providers, so kept out of PROV_META /
+// PROV_ORDER which drive the provider config UI). 'local' = locally-generated item.
+const PROV_LABELS = { cache: 'Caché', cache_fallback: 'Caché (AI saturada)', local: 'Actividad' };
 
 function getProviderKeys() {
     try {
@@ -269,13 +271,44 @@ function getBestVoice() {
     return voices.find(v => v.lang.startsWith('es')) || null;
 }
 
+// Make text safe for the Web Speech API. Phonetic notation like "/s/" is read aloud
+// as "por segundo" (slash → "por", s → "segundo"), and letter pairs like "Z/C" as
+// "Z dividido C". Children listen rather than read, so we speak these as sounds/letters.
+function ttsClean(txt) {
+    if (!txt) return txt;
+    // Spanish letter names so TTS says the LETTER, not a division/phoneme symbol.
+    const letterName = {
+        A: 'a', B: 'be', C: 'ce', D: 'de', E: 'e', F: 'efe', G: 'ge', H: 'hache', I: 'i',
+        J: 'jota', K: 'ka', L: 'ele', M: 'eme', N: 'ene', Ñ: 'eñe', O: 'o', P: 'pe', Q: 'cu',
+        R: 'erre', S: 'ese', T: 'te', U: 'u', V: 'uve', W: 'doble uve', X: 'equis', Y: 'ye', Z: 'zeta'
+    };
+    const sayGroup = g => g.length === 1
+        ? (letterName[g] || g)
+        : g.split('').map(c => letterName[c] || c).join(' ');
+    return txt
+        // "/s/", "/m/", "/rr/" → "el sonido S" (1-3 letters wrapped in slashes only,
+        // so dates 12/05, fractions 1/2 and URLs are left untouched). If "sonido"
+        // already precedes, keep just the letter to avoid "el sonido el sonido S".
+        .replace(/(sonidos?\s+)?\/([a-zñ]{1,3})\//gi, (_, pre, s) => (pre || ' el sonido ') + s.toUpperCase() + ' ')
+        // "Z/C", "B/V", "G/GU", "K/QU" → "zeta o ce" (both sides ALL-CAPS letter groups)
+        .replace(/\b([A-ZÑ]{1,2})\/([A-ZÑ]{1,3})\b/g, (_, a, b) => sayGroup(a) + ' o ' + sayGroup(b))
+        // Single-letter labels before a colon ("Caja A:", "Opción B:") glue to the
+        // preceding word in TTS ("caja"+"a" → "cajaa"). Insert a comma pause between
+        // the word and the letter to break the glue without renaming it ("letra A"
+        // read badly inside "Opción A"). Requires a preceding word so it can't hit a
+        // sentence-leading "A".
+        .replace(/\b([a-zñáéíóú]+)\s+([A-D]):/gi, '$1, $2:')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
 function speak(txt, onEnd) {
     if (!useTTS || !txt) {
         if (onEnd) onEnd();
         return;
     }
     synth.cancel();
-    const u = new SpeechSynthesisUtterance(txt);
+    const u = new SpeechSynthesisUtterance(ttsClean(txt));
     const v = getBestVoice();
     if (v) u.voice = v;
     u.lang = 'es-ES';
@@ -334,7 +367,7 @@ function startListening() {
     recognition.interimResults = false;
     recognition.maxAlternatives = 3;
     setOwl('listening');
-    setStatus('¡Hablá! A, B, C o D...', 'listening');
+    setStatus('¡Habla! ' + lettersPhraseOf(currentQ) + '...', 'listening');
     const mb = document.getElementById('micBtn'), ml = document.getElementById('micLbl');
     if (mb) mb.className = 'mic-btn listening';
     if (ml) ml.textContent = 'Escuchando...';
@@ -350,8 +383,8 @@ function startListening() {
         stopSRUI();
         if (l && currentQ && !currentQ.chosen) chooseAns(l);
         else {
-            setStatus('No entendí. Tocá una opción.', '');
-            if (useTTS) speak('No entendí, tocá una opción.');
+            setStatus('No entendí. Toca una opción.', '');
+            if (useTTS) speak('No entendí, toca una opción.');
         }
     };
     recognition.onerror = () => {
@@ -381,7 +414,7 @@ function stopSRUI() {
     srActive = false;
     const mb = document.getElementById('micBtn'), ml = document.getElementById('micLbl');
     if (mb) mb.className = 'mic-btn idle';
-    if (ml) ml.textContent = useSR && SR ? 'Decí A, B, C o D' : 'Toca una opción';
+    if (ml) ml.textContent = useSR && SR ? 'Di ' + lettersPhraseOf(currentQ) : 'Toca una opción';
     setOwl('idle');
     setStatus('', '');
 }
@@ -776,7 +809,9 @@ B) círculo
 CORRECTA: B
 EXPLICACION: El círculo es redondo.
 
-PROHIBIDO: palabras abstractas, conceptos que un niño de 5 años no conoce, preguntas que necesiten ver imágenes.${buildCtx(obj.subjKey)}`;
+PROHIBIDO: palabras abstractas, conceptos que un niño de 5 años no conoce, preguntas que necesiten ver imágenes.
+SONIDOS: escribe los sonidos como "el sonido S", NUNCA con barras tipo "/s/". Nombra las letras por su nombre ("la letra ce"), nunca como "Z/C". El niño ESCUCHA, no lee.
+ETIQUETAS: NO uses etiquetas de una sola letra como "Caja A" o "Grupo B" (suenan pegadas al leerlas). Nombra los grupos con palabras: "la primera caja", "la segunda caja", "la caja de la izquierda", "el grupo de Ana".${buildCtx(obj.subjKey)}`;
     }
     return `Eres un generador de preguntas de múltiple opción para ${g.label} (niños ${g.age}), currículo cubano.
 Materia: ${obj.subj}. Unidad: "${obj.unit}".
@@ -807,7 +842,8 @@ EXPLICACION: 2 más 3 es 5.
 
 VERIFICA antes de responder: la letra en CORRECTA debe coincidir con la opción que tiene la respuesta verdadera.
 
-PROHIBIDO: preguntas que necesiten ver una imagen, dibujo, ilustración, figura, lámina o tabla. Todo debe entenderse SOLO con texto. Lenguaje muy simple, español.${buildCtx(obj.subjKey)}`;
+PROHIBIDO: preguntas que necesiten ver una imagen, dibujo, ilustración, figura, lámina o tabla. Todo debe entenderse SOLO con texto. Lenguaje muy simple, español.
+SONIDOS: escribe los sonidos como "el sonido S", NUNCA con barras tipo "/s/". Nombra las letras por su nombre ("la letra ce"), nunca como "Z/C". El niño ESCUCHA, no lee.${buildCtx(obj.subjKey)}`;
 }
 
 function getUMsg(obj, n, tot, prev) {
@@ -906,6 +942,49 @@ function parseQ(txt) {
     };
 }
 
+// Local correctness guard for deterministically-checkable phonetic questions.
+// The AI sometimes mislabels CORRECTA (e.g. asks "¿Con qué sonido empieza perrito?",
+// lists "A) sonido p / B) sonido t", explains it's 'p', yet marks CORRECTA: B).
+// "Initial/final sound of word X" has a single objective answer: the first/last sound
+// of X. We can verify it locally and auto-fix the CORRECTA letter instead of wasting a
+// regeneration. Pure helper, no DOM. Returns the (possibly corrected) question object.
+function reconcilePhoneticAnswer(q, obj) {
+    if (!q || !obj || !obj.obj) return q;
+    // Only fire for the "Identificar el sonido inicial/final de una palabra" objective.
+    if (!/sonido (inicial|final) de una palabra/i.test(obj.obj)) return q;
+    // Only handle the deterministic question shape; capture position word + target word.
+    const m = (q.question || '').match(/¿con qué sonido (empieza|termina) la palabra\s+([a-záéíóúñü]+)/i);
+    if (!m) return q;
+    const isFinal = /termina/i.test(m[1]);
+    let word = m[2].toLowerCase().replace(/[^a-záéíóúñü]/g, '');
+    if (!word) return q;
+    // Compute the target sound = first/last letter, with the only trivial digraphs special-cased.
+    // (ch/ll/rr/qu/gu behave as one sound; rr never appears word-initially, so it's final-only.)
+    let sound;
+    if (isFinal) {
+        sound = word.slice(-1);
+    } else {
+        const two = word.slice(0, 2);
+        sound = (two === 'ch' || two === 'll' || two === 'qu' || two === 'gu') ? two : word[0];
+    }
+    // Strip accents on the computed sound so "á" matches an "a" option, etc.
+    const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const target = norm(sound);
+    // Find the option(s) whose text names that sound: "sonido p", "letra p", or a lone "p".
+    const matches = ['A', 'B', 'C', 'D'].filter(l => {
+        const t = q.opts && q.opts[l];
+        if (!t) return false;
+        const cleaned = norm(t).replace(/\b(sonido|letra|el|la)\b/g, ' ').trim();
+        // Accept exact single-token match (e.g. "p" or "ch") to avoid false hits on prose.
+        return cleaned === target;
+    });
+    // Auto-fix only when exactly one option matches and it disagrees with the AI's label.
+    if (matches.length === 1 && matches[0] !== q.correct) {
+        q.correct = matches[0];
+    }
+    return q;
+}
+
 function pickObj() {
     const all = getActiveObjs();
     if (!all.length) return null;
@@ -940,6 +1019,26 @@ async function loadQ() {
     if (!obj) return;
     const realDiff = getRealDiff();
     const cacheKey = _grade + '::' + obj.k + '::' + realDiff;
+    // Locally-generated visual items (preescolar Matemática) bypass cache + AI:
+    // we render an SVG scene whose answer we compute, so it's always correct and
+    // never depends on an unseen image.
+    if (_grade === 'preesc' && typeof VisualItems !== 'undefined' && VisualItems.templatesFor(obj)) {
+        const vq = VisualItems.generateVisualItem(obj, realDiff);
+        if (vq) {
+            stopAll();
+            lastProvider = 'local';
+            vq.objText = obj.obj;
+            vq.subjLabel = obj.subj;
+            vq.chosen = null;
+            vq.color = obj.color;
+            sessQs.push(vq);
+            sessAsked.push(vq.question);
+            currentQ = vq;
+            renderQ(vq);
+            readQuestion(vq);
+            return;
+        }
+    }
     try {
         // Try cache first
         let q = null;
@@ -986,6 +1085,9 @@ async function loadQ() {
             q.warning = fallbackWarning;
             q.warningKid = fallbackWarningKid;
         }
+        // Auto-correct AI CORRECTA mislabels for deterministic initial/final-sound questions.
+        // Applied to both freshly parsed AI questions and cached ones (both converge here).
+        reconcilePhoneticAnswer(q, obj);
         q.objText = obj.obj;
         q.subjLabel = obj.subj;
         q.chosen = null;
@@ -1007,20 +1109,28 @@ async function loadQ() {
     }
 }
 
+// "A o B" for 2-option items, "A, B, C o D" for 4 — matches the options shown.
+function lettersPhraseOf(q) {
+    const ls = q && q.opts ? ['A', 'B', 'C', 'D'].filter(l => q.opts[l]) : ['A', 'B', 'C', 'D'];
+    return ls.length <= 1 ? ls.join('') : ls.slice(0, -1).join(', ') + ' o ' + ls[ls.length - 1];
+}
+
 function renderQ(q) {
+    const lettersPhrase = lettersPhraseOf(q);
     const letters = ['A', 'B', 'C', 'D'].filter(l => q.opts[l]);
     // Only render image if path matches expected prefix (defense in depth — backend already restricts).
     const safeImg = q.image && /^assets\/img\/[\w\-/.]+\.(png|jpe?g|svg|webp)$/i.test(q.image) ? q.image : '';
     const imgHtml = safeImg ? `<img class="qimg" src="${esc(safeImg)}" alt="" onerror="this.style.display='none'">` : '';
+    const visualHtml = q.svg ? `<div class="qsvg">${q.svg}</div>` : imgHtml;
     document.getElementById('vContent').innerHTML = `
-    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div>${imgHtml}<br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para quien te acompaña: ' + esc(q.warning) + '</div>' : ''}</div>
+    <div class="qbubble">${q.warningKid ? '<div class="prov-warning-kid">🦉 ' + esc(q.warningKid) + '</div>' : ''}<div class="qobj">${esc(q.objText)}</div>${visualHtml}<br><span>${esc(q.question)}</span>${lastProvider ? '<div class="prov-badge">vía ' + esc(PROV_META[lastProvider]?.label || PROV_LABELS[lastProvider] || lastProvider) + '</div>' : ''}${q.warning ? '<div class="prov-warning">⚠️ Para quien te acompaña: ' + esc(q.warning) + '</div>' : ''}</div>
     <div class="opts">${letters.map(l => `<button class="opt" data-l="${l}" onclick="chooseAns('${l}')" id="opt${l}"><span class="oltr">${l}</span><span>${esc(q.opts[l])}</span></button>`).join('')}</div>
     <div class="vfeedback" id="vfb"></div>
     <div class="vexpl" id="vex"></div>
     <button class="vnext" id="vnext" onclick="goNext()">${sessIdx + 1 < battCnt ? 'Siguiente ➜' : 'Ver resultados 🏁'}</button>
     <div class="vcontrols">
       <div class="vc-wrap"><button class="replay-btn" onclick="readQuestion(currentQ)">🔊</button></div>
-      <div class="vc-wrap"><button class="mic-btn idle" id="micBtn" onclick="toggleListen()">🎤</button><div class="mic-lbl" id="micLbl">${useSR && SR ? 'Decí A, B, C o D' : 'Toca una opción'}</div></div>
+      <div class="vc-wrap"><button class="mic-btn idle" id="micBtn" onclick="toggleListen()">🎤</button><div class="mic-lbl" id="micLbl">${useSR && SR ? 'Di ' + lettersPhrase : 'Toca una opción'}</div></div>
       <div class="vc-wrap"><button class="replay-btn" onclick="readOptions(currentQ)">📋</button></div>
     </div>`;
     updVProg();
@@ -1046,7 +1156,7 @@ function readOptions(q) {
         if (i < ls.length) {
             const l = ls[i++];
             speak(`Opción ${l}: ${q.opts[l]}`, next);
-        } else speak('¿Cuál elegís?', () => {
+        } else speak('¿Cuál eliges?', () => {
             if (useSR && SR && !currentQ?.chosen) startListening();
         });
     }
@@ -1068,7 +1178,7 @@ function chooseAns(letter) {
         if (!isOk) document.getElementById('opt' + letter)?.classList.add('wrong');
         const fb = document.getElementById('vfb');
         if (fb) {
-            fb.textContent = isOk ? '✅ ¡Muy bien! ¡Correcto!' : '❌ ¡Casi! Mirá la respuesta correcta.';
+            fb.textContent = isOk ? '✅ ¡Muy bien! ¡Correcto!' : '❌ ¡Casi! Mira la respuesta correcta.';
             fb.className = 'vfeedback ' + (isOk ? 'fc' : 'fw') + ' show';
         }
         if (q.explanation) {
@@ -1143,7 +1253,7 @@ function showReport() {
             ok: q.chosen === q.correct
         }))
     });
-    if (useTTS) speak(pct >= 60 ? '¡Muy bien! Terminaste.' : 'Terminaste. ¡Seguí practicando!');
+    if (useTTS) speak(pct >= 60 ? '¡Muy bien! Terminaste.' : 'Terminaste. ¡Sigue practicando!');
 }
 
 // ── HISTORY ──
