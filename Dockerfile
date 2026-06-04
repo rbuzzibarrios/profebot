@@ -18,6 +18,7 @@ COPY profebot.php /app/
 COPY profebot.html /app/
 COPY profebot.css /app/
 COPY profebot.js /app/
+COPY visual-items.js /app/
 COPY router.php /app/
 COPY favicon.svg /app/
 COPY VERSION /app/
