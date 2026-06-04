@@ -292,10 +292,12 @@ function ttsClean(txt) {
         .replace(/(sonidos?\s+)?\/([a-zñ]{1,3})\//gi, (_, pre, s) => (pre || ' el sonido ') + s.toUpperCase() + ' ')
         // "Z/C", "B/V", "G/GU", "K/QU" → "zeta o ce" (both sides ALL-CAPS letter groups)
         .replace(/\b([A-ZÑ]{1,2})\/([A-ZÑ]{1,3})\b/g, (_, a, b) => sayGroup(a) + ' o ' + sayGroup(b))
-        // Single-letter labels before a colon ("Caja A:", "Caja B:") glue to the
-        // preceding word in TTS ("caja"+"a" → "cajaa"). Spell them ("letra A") to
-        // break the glue. Only A–D before ":" so it can't hit a sentence-leading "A".
-        .replace(/\b([A-D]):/g, 'letra $1:')
+        // Single-letter labels before a colon ("Caja A:", "Opción B:") glue to the
+        // preceding word in TTS ("caja"+"a" → "cajaa"). Insert a comma pause between
+        // the word and the letter to break the glue without renaming it ("letra A"
+        // read badly inside "Opción A"). Requires a preceding word so it can't hit a
+        // sentence-leading "A".
+        .replace(/\b([a-zñáéíóú]+)\s+([A-D]):/gi, '$1, $2:')
         .replace(/\s{2,}/g, ' ')
         .trim();
 }
@@ -365,7 +367,7 @@ function startListening() {
     recognition.interimResults = false;
     recognition.maxAlternatives = 3;
     setOwl('listening');
-    setStatus('¡Hablá! A, B, C o D...', 'listening');
+    setStatus('¡Habla! ' + lettersPhraseOf(currentQ) + '...', 'listening');
     const mb = document.getElementById('micBtn'), ml = document.getElementById('micLbl');
     if (mb) mb.className = 'mic-btn listening';
     if (ml) ml.textContent = 'Escuchando...';
@@ -381,8 +383,8 @@ function startListening() {
         stopSRUI();
         if (l && currentQ && !currentQ.chosen) chooseAns(l);
         else {
-            setStatus('No entendí. Tocá una opción.', '');
-            if (useTTS) speak('No entendí, tocá una opción.');
+            setStatus('No entendí. Toca una opción.', '');
+            if (useTTS) speak('No entendí, toca una opción.');
         }
     };
     recognition.onerror = () => {
@@ -412,7 +414,7 @@ function stopSRUI() {
     srActive = false;
     const mb = document.getElementById('micBtn'), ml = document.getElementById('micLbl');
     if (mb) mb.className = 'mic-btn idle';
-    if (ml) ml.textContent = useSR && SR ? 'Decí A, B, C o D' : 'Toca una opción';
+    if (ml) ml.textContent = useSR && SR ? 'Di ' + lettersPhraseOf(currentQ) : 'Toca una opción';
     setOwl('idle');
     setStatus('', '');
 }
@@ -1107,7 +1109,14 @@ async function loadQ() {
     }
 }
 
+// "A o B" for 2-option items, "A, B, C o D" for 4 — matches the options shown.
+function lettersPhraseOf(q) {
+    const ls = q && q.opts ? ['A', 'B', 'C', 'D'].filter(l => q.opts[l]) : ['A', 'B', 'C', 'D'];
+    return ls.length <= 1 ? ls.join('') : ls.slice(0, -1).join(', ') + ' o ' + ls[ls.length - 1];
+}
+
 function renderQ(q) {
+    const lettersPhrase = lettersPhraseOf(q);
     const letters = ['A', 'B', 'C', 'D'].filter(l => q.opts[l]);
     // Only render image if path matches expected prefix (defense in depth — backend already restricts).
     const safeImg = q.image && /^assets\/img\/[\w\-/.]+\.(png|jpe?g|svg|webp)$/i.test(q.image) ? q.image : '';
@@ -1121,7 +1130,7 @@ function renderQ(q) {
     <button class="vnext" id="vnext" onclick="goNext()">${sessIdx + 1 < battCnt ? 'Siguiente ➜' : 'Ver resultados 🏁'}</button>
     <div class="vcontrols">
       <div class="vc-wrap"><button class="replay-btn" onclick="readQuestion(currentQ)">🔊</button></div>
-      <div class="vc-wrap"><button class="mic-btn idle" id="micBtn" onclick="toggleListen()">🎤</button><div class="mic-lbl" id="micLbl">${useSR && SR ? 'Decí A, B, C o D' : 'Toca una opción'}</div></div>
+      <div class="vc-wrap"><button class="mic-btn idle" id="micBtn" onclick="toggleListen()">🎤</button><div class="mic-lbl" id="micLbl">${useSR && SR ? 'Di ' + lettersPhrase : 'Toca una opción'}</div></div>
       <div class="vc-wrap"><button class="replay-btn" onclick="readOptions(currentQ)">📋</button></div>
     </div>`;
     updVProg();
@@ -1147,7 +1156,7 @@ function readOptions(q) {
         if (i < ls.length) {
             const l = ls[i++];
             speak(`Opción ${l}: ${q.opts[l]}`, next);
-        } else speak('¿Cuál elegís?', () => {
+        } else speak('¿Cuál eliges?', () => {
             if (useSR && SR && !currentQ?.chosen) startListening();
         });
     }
@@ -1169,7 +1178,7 @@ function chooseAns(letter) {
         if (!isOk) document.getElementById('opt' + letter)?.classList.add('wrong');
         const fb = document.getElementById('vfb');
         if (fb) {
-            fb.textContent = isOk ? '✅ ¡Muy bien! ¡Correcto!' : '❌ ¡Casi! Mirá la respuesta correcta.';
+            fb.textContent = isOk ? '✅ ¡Muy bien! ¡Correcto!' : '❌ ¡Casi! Mira la respuesta correcta.';
             fb.className = 'vfeedback ' + (isOk ? 'fc' : 'fw') + ' show';
         }
         if (q.explanation) {
@@ -1244,7 +1253,7 @@ function showReport() {
             ok: q.chosen === q.correct
         }))
     });
-    if (useTTS) speak(pct >= 60 ? '¡Muy bien! Terminaste.' : 'Terminaste. ¡Seguí practicando!');
+    if (useTTS) speak(pct >= 60 ? '¡Muy bien! Terminaste.' : 'Terminaste. ¡Sigue practicando!');
 }
 
 // ── HISTORY ──

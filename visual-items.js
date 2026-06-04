@@ -175,10 +175,106 @@
       correctIndex: options2.indexOf(capit(SHAPE_SINGULAR[shape])), explanation: 'Todas las figuras son ' + SHAPE_PLURAL[shape] + '.' };
   }
 
+  // --- Two-box set-relation rendering ---------------------------------------
+  // Draws each scene inside its own bordered, captioned box, side by side, so
+  // questions that reference "las dos cajas" actually show two visible sets.
+  function boxSVG(scene, ox, oy, label) {
+    var cell = 66, perRow = 3, n = scene.shapes.length;
+    var cols = Math.min(Math.max(n, 1), perRow), rows = Math.ceil(Math.max(n, 1) / perRow);
+    var pad = 14, labelH = 24;
+    var bw = cols * cell + pad * 2, bh = rows * cell + pad * 2 + labelH;
+    var body = '<rect x="' + ox + '" y="' + oy + '" width="' + bw + '" height="' + bh + '" rx="12" fill="#fafafa" stroke="#bbb" stroke-width="2"/>';
+    body += '<text x="' + (ox + bw / 2) + '" y="' + (oy + 17) + '" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#666">' + label + '</text>';
+    for (var i = 0; i < n; i++) {
+      var cx = ox + pad + (i % perRow) * cell + cell / 2;
+      var cy = oy + labelH + pad + Math.floor(i / perRow) * cell + cell / 2;
+      body += shapeSVG(scene.shapes[i], cx, cy);
+    }
+    return { svg: body, w: bw, h: bh };
+  }
+
+  function renderTwoBoxSVG(sceneA, sceneB, labelA, labelB) {
+    var gap = 30, oy = 4;
+    var a = boxSVG(sceneA, 0, oy, labelA);
+    var b = boxSVG(sceneB, a.w + gap, oy, labelB);
+    var w = a.w + gap + b.w, h = Math.max(a.h, b.h) + oy * 2;
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">' + a.svg + b.svg + '</svg>';
+  }
+
+  // Build a scene of same-shape balls in the given colors (1 per color, order kept).
+  function ballsOf(colors) {
+    return { shapes: colors.map(function (c) { return { kind: 'circle', color: c, size: 'pequeño' }; }) };
+  }
+
+  // "Elemento común": one color appears in BOTH boxes, the distractor in only one.
+  function tplCommonElement(diff) {
+    var three = shuffle(COLORS).slice(0, 3), common = three[0], onlyA = three[1], onlyB = three[2];
+    var sceneA = ballsOf(shuffle([common, onlyA, common]));
+    var sceneB = ballsOf(shuffle([common, onlyB, onlyB]));
+    var options = shuffle([capit(common), capit(onlyA)]);
+    return {
+      scene: sceneA,
+      svg: renderTwoBoxSVG(sceneA, sceneB, 'Primera caja', 'Segunda caja'),
+      question: '¿Qué color está en las dos cajas?', options: options,
+      correctIndex: options.indexOf(capit(common)),
+      explanation: 'El color ' + capit(common) + ' está en las dos cajas.'
+    };
+  }
+
+  // "Elemento que falta": second box is the first minus one color; name it.
+  function tplMissingElement(diff) {
+    var cols = shuffle(COLORS).slice(0, 3), missing = cols[2], present = cols[0];
+    var sceneA = ballsOf(cols);
+    var sceneB = ballsOf([cols[0], cols[1]]);
+    var options = shuffle([capit(missing), capit(present)]);
+    return {
+      scene: sceneA,
+      svg: renderTwoBoxSVG(sceneA, sceneB, 'Caja completa', 'Caja incompleta'),
+      question: '¿Qué color le falta a la segunda caja para tener los mismos que la primera?',
+      options: options, correctIndex: options.indexOf(capit(missing)),
+      explanation: 'A la segunda caja le falta el color ' + capit(missing) + '.'
+    };
+  }
+
+  // "Reunir": union count of the two boxes.
+  function tplUnion(diff) {
+    var max = maxTotalFor(diff);
+    var nA = randInt(1, Math.max(2, Math.floor(max / 2)));
+    var nB = randInt(1, Math.max(1, max - nA));
+    var sceneA = makeScene(nA, { sizes: ['pequeño'] });
+    var sceneB = makeScene(nB, { sizes: ['pequeño'] });
+    var total = nA + nB, options = numericOptions(total, total, diff);
+    return {
+      scene: sceneA,
+      svg: renderTwoBoxSVG(sceneA, sceneB, 'Primera caja', 'Segunda caja'),
+      question: 'Si juntamos las dos cajas, ¿cuántas figuras hay en total?',
+      options: options, correctIndex: options.indexOf(String(total)),
+      explanation: 'En total hay ' + nA + ' + ' + nB + ' = ' + total + ' figuras.'
+    };
+  }
+
+  // "Separar": single box of same-shape balls in K colors; answer is K groups.
+  function tplSeparate(diff) {
+    var k = randInt(2, 3), cols = shuffle(COLORS).slice(0, k);
+    var n = randInt(k, Math.max(k, maxTotalFor(diff)));
+    var shapes = [], i;
+    for (i = 0; i < k; i++) shapes.push({ kind: 'circle', color: cols[i], size: 'pequeño' });
+    for (i = k; i < n; i++) shapes.push({ kind: 'circle', color: pick(cols), size: 'pequeño' });
+    var scene = { shapes: shuffle(shapes) };
+    var options = numericOptions(k, k + 2, diff);
+    return {
+      scene: scene, question: '¿En cuántos grupos de color se pueden separar las figuras?',
+      options: options, correctIndex: options.indexOf(String(k)),
+      explanation: 'Hay ' + k + ' colores distintos, así que ' + k + ' grupos.'
+    };
+  }
+
   var TEMPLATES = {
     countAll: tplCountAll, countByColor: tplCountByColor,
     countByShape: tplCountByShape, countNotX: tplCountNotX,
-    compareQty: tplCompareQty, compareSize: tplCompareSize, commonAttr: tplCommonAttr
+    compareQty: tplCompareQty, compareSize: tplCompareSize, commonAttr: tplCommonAttr,
+    commonElement: tplCommonElement, missingElement: tplMissingElement,
+    union: tplUnion, separate: tplSeparate
   };
 
   // Maps an objective (by its Spanish text) to the templates that fit it.
@@ -193,6 +289,10 @@
     if (/elemento que sobra/.test(t)) return ['countNotX'];
     if (/igual cantidad|más que|menos que|comparar cantidad/.test(t)) return ['compareQty'];
     if (/contar objetos hasta/.test(t)) return ['countAll', 'countByColor'];
+    if (/elemento común|elemento comun/.test(t)) return ['commonElement'];
+    if (/elemento que falta/.test(t)) return ['missingElement'];
+    if (/reunir|unión de conjuntos|union de conjuntos|operaciones combinadas/.test(t)) return ['union'];
+    if (/separar|separación de conjuntos|separacion de conjuntos/.test(t)) return ['separate'];
     return null;
   }
 
@@ -206,7 +306,7 @@
     for (var i = 0; i < r.options.length; i++) opts[letters[i]] = r.options[i];
     return {
       question: r.question,
-      svg: renderSceneSVG(r.scene),
+      svg: r.svg || renderSceneSVG(r.scene),
       opts: opts,
       correct: letters[r.correctIndex],
       explanation: r.explanation

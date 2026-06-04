@@ -120,6 +120,44 @@ test('commonAttr fires only on uniform scenes and names the shared attribute', (
   }
 });
 
+test('commonElement: answer color is in both boxes, distractor in only one', () => {
+  for (let i = 0; i < 300; i++) {
+    const r = VI.TEMPLATES.commonElement('media');
+    assert.equal(r.options.length, 2);
+    assert.match(r.svg, /^<svg /);
+    assert.equal((r.svg.match(/<rect /g) || []).length >= 2, true); // two box borders
+    const truth = r.options[r.correctIndex].toLowerCase();
+    const colorsA = new Set(r.scene.shapes.map(s => s.color));
+    assert.ok(colorsA.has(truth), 'common color present in first box');
+  }
+});
+test('missingElement: answer is the color absent from the incomplete box', () => {
+  for (let i = 0; i < 300; i++) {
+    const r = VI.TEMPLATES.missingElement('media');
+    assert.equal(r.options.length, 2);
+    const full = new Set(r.scene.shapes.map(s => s.color));
+    const truth = r.options[r.correctIndex].toLowerCase();
+    assert.ok(full.has(truth), 'missing color exists in the complete box');
+  }
+});
+test('union: answer equals total shapes across both boxes', () => {
+  for (const diff of ['fácil', 'media', 'difícil']) for (let i = 0; i < 200; i++) {
+    const r = VI.TEMPLATES.union(diff);
+    assert.equal(r.options.length, 2);
+    const m = r.explanation.match(/(\d+) \+ (\d+) = (\d+)/);
+    assert.equal(Number(m[1]) + Number(m[2]), Number(m[3]));
+    assert.equal(r.options[r.correctIndex], m[3]);
+  }
+});
+test('separate: answer equals the number of distinct colors', () => {
+  for (const diff of ['fácil', 'media', 'difícil']) for (let i = 0; i < 200; i++) {
+    const r = VI.TEMPLATES.separate(diff);
+    assert.equal(r.options.length, 2);
+    const k = new Set(r.scene.shapes.map(s => s.color)).size;
+    assert.equal(r.options[r.correctIndex], String(k));
+  }
+});
+
 test('templatesFor maps preescolar mat objectives, null otherwise', () => {
   const objs = {
     'Agrupar objetos por su color': ['countByColor', 'commonAttr'],
@@ -130,7 +168,12 @@ test('templatesFor maps preescolar mat objectives, null otherwise', () => {
     'Comparar cantidades: más que / menos que': ['compareQty'],
     'Reconocer conjuntos con igual cantidad': ['compareQty'],
     'Contar objetos hasta 5': ['countAll', 'countByColor'],
-    'Contar objetos hasta 10': ['countAll', 'countByColor']
+    'Contar objetos hasta 10': ['countAll', 'countByColor'],
+    'Encontrar el elemento común entre dos conjuntos': ['commonElement'],
+    'Identificar el elemento que falta en un conjunto': ['missingElement'],
+    'Reunir dos conjuntos en uno solo': ['union'],
+    'Realizar operaciones combinadas con conjuntos': ['union'],
+    'Separar un conjunto en dos grupos': ['separate']
   };
   for (const [text, ids] of Object.entries(objs)) {
     assert.deepEqual(VI.templatesFor({ subjKey: 'mat', obj: text }), ids);
